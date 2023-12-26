@@ -1,0 +1,527 @@
+#root {
+  text-align: center;
+}
+@font-face {
+  font-family: quicksand;
+  src: url('./Quicksand-Medium.ttf');
+}
+body{
+  font-family: quicksand;
+  margin: 0;
+}
+a{
+  color: black;
+  text-decoration: none;
+}
+
+#map{
+  display: flex;
+  height: calc(100vh - 100px);
+}
+
+.gen{
+  overflow: hidden;
+  height: 100vh;
+  position: relative;
+}
+
+.item{
+  width: 100%;
+  height: 100%;
+  gap: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 20px;
+  padding: 0px 20px;
+  letter-spacing: 2px;
+  box-sizing: border-box;
+  text-transform: uppercase;
+}
+.btn{
+  cursor: pointer;
+}
+.icons{
+  display: flex;
+  flex-direction: column;
+  z-index: 1;
+}
+.icons div{
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.icons div svg{
+  cursor: pointer;
+  opacity: 0.3;
+}
+.setup{
+  opacity: 1;
+}
+.setu{
+  opacity: 0;
+}
+.set{
+  opacity: 1;
+}
+.sort{
+  transform: rotateZ(90deg);
+  display: flex;
+  justify-content: center;
+}
+svg{
+  padding: 5px;
+}
+.controls{
+  align-items: center;
+  display: flex;
+  padding: 0 20px;
+  height: 50px;
+}
+.btn{
+  height: 80%;
+  padding: 0 20px;
+  border-radius: 5px;
+  background-color: white;
+  color: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #3c3c3c;
+}
+.favourite{
+  margin-left: auto;
+}
+button:disabled{
+  color: grey;
+}
+.arr{
+  padding: 25px 15px;
+  color: black;
+  margin-left: 20px;
+  border: none;
+}
+.copy{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.copy svg{
+  position: absolute;
+}
+
+
+
+/*Popup Styles and Animations */
+.popup{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: black;
+  height: 40px;
+  width: 5px;
+  padding: 0 20px;
+  position: absolute;
+  color: transparent;
+  border-radius: 50px;
+  transform: translate(-50%, -0%);
+  left: 50%;
+  top: 100%;
+  animation: up .3s ease-out forwards, expand .3s ease forwards .5s, down .2s ease-in forwards 1.2s;
+}
+@keyframes up {
+  0%{
+    top: 100%;
+  }
+  100%{
+    top: 90%;
+  }
+}
+@keyframes expand {
+  0%{
+    width: 40px;
+  }
+  30%{
+    width: 200px;
+  }
+  100%{
+    width: 200px;
+    color: white;
+  }
+}
+@keyframes down {
+  0%{
+    top: 90%;
+    width: 200px;
+  }
+  100%{
+    top: 100%;
+  }
+}
+.nopop{
+  position: absolute;
+  top: 100%;
+}
+
+
+@media screen and (max-width: 768px) {
+  #map{
+    flex-direction: column;
+  }
+  .item, .icons{
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .icons div{
+    width: 50px;
+  }
+  .icons .del{
+    display: none;
+  }
+  .sort svg{
+    transform: rotateZ(90deg);
+  }
+}
+
+
+.brand{
+  color: aqua;
+  font-size: 30px;
+  font-weight: bolder;
+  letter-spacing: 5px;
+
+}
+.navbar{
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 10;
+}
+
+.menu{
+  font-size: 20px;
+  position: absolute;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  top: 50%;
+  right: 0;
+}
+.side{
+  position: fixed;
+  height: 100vh;
+  background: #fff;
+  bottom: 0;
+  right: 0;
+  width: 50%;
+  animation: menu .5s linear forwards;
+}
+@media screen and (max-width:768px) {
+  .side{
+    width: 75%;
+  }
+}
+.side li, .slide li{
+  list-style: none;
+  margin: 10px 0;
+  cursor: pointer;
+  padding: 15px;
+  box-sizing: border-box;
+  text-align: left;
+  border-radius: 10px;
+  transition: all .5s;
+}
+.side ul, .slide ul{
+  display: flex;
+  padding-top: 50px;
+  z-index: 10000;
+  flex-direction: column;
+  justify-content: start;
+  align-items: start;
+}
+.side li:hover{
+  background-color: #3c3c3ca3;
+  color: white;
+  font-weight: bold;
+}
+
+.close{
+  position: absolute;
+  padding: 20px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+@keyframes menu {
+  0%{
+    right: -100%;
+  }
+  100%{
+    right: 0%;
+  }
+}
+.slide{
+  position: fixed;
+  height: 100vh;
+  background: #fff;
+  bottom: 0;
+  right: 0;
+  display: block;
+  width: 50%;
+  animation: men .5s linear forwards;
+}
+@keyframes men {
+  0%{
+    right: 0%;
+  }
+  100%{
+    right: -100%;
+  }
+}
+
+.bg{
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  background: #0000005f;
+  top: 0%;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+.loader{
+  width: 100%;
+  height: 100vh;
+  position: fixed;
+  background-color: rgb(15, 0, 151);
+  z-index: 1000;
+}
+.circ{
+  width: calc(100vw / 16);
+  height: calc(100vw / 16);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-bottom: 2px solid white;
+  border-radius: 50%;
+  transform: rotateZ(0deg);
+  animation: roll 1s linear infinite;
+}
+
+.circ:nth-child(2){
+    animation-delay: -0.5s;
+    width: calc(100vw / 20);
+    height: calc(100vw / 20);
+    animation-direction: reverse;
+}
+@keyframes roll {
+    0%{
+        transform: translate(-50%, -50%) rotateZ(0deg);
+    }
+    100%{
+        transform: translate(-50%, -50%) rotateZ(360deg);
+    }
+}
+
+
+
+.head{
+  height: 70px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+.ar{
+  position: absolute;
+  left: 30px;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.deleteAll{
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.fle{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.fle .fav{
+  width: 200px;
+}
+.cont{
+  display: grid;
+  align-items: center;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin: 40px auto;
+  padding: 10px 20px;
+  gap: 10px;
+}
+.fav{
+  height: 200px;
+  max-width: 300px;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+@media screen and (max-width: 500px) {
+  .cont{
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  .fav{
+    max-width: 200px;
+    height: 150px;
+
+  }
+}
+@media screen and (max-width: 350px) {
+  .cont{
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+  .favh{
+    font-size: 16px;
+  }
+  .fav{
+    max-width: 150px;
+    height: 100px;
+
+  }
+}
+.fav::before{
+  position: absolute;
+  content: '';
+  top: 0;
+  left: 0;
+  transform: translate(0%, 0%);
+  height: 100%;
+  width: 100%;
+  transition: all .5s;
+  opacity: 0;
+}
+.fav:hover::before{
+  opacity: .2;
+  background: #000;
+}
+.fav:hover > .end{
+  bottom: 0;
+  transition: all .5s;
+}
+.end{
+  position: absolute;
+  height: 50px;
+  transition: top 5s;
+  width: 100%;
+  color: white;
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 20px;
+  border-radius: 10px;
+  bottom: -50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+}
+
+.fav:hover > .options{
+  opacity: 1;
+  top: 50%;
+  transition: all .5s;
+}
+.options{
+  display: flex;
+  position: absolute;
+  width: 100%;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, -50%);
+  align-items: center;
+  justify-content: space-evenly;
+  opacity: 0;
+}
+.round{
+  width: 50px;
+  height: 50px;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.round:hover{
+  cursor: pointer;
+}
+
+
+
+
+
+.home{
+  position: absolute;
+  left: 20px;
+  top: 25px;
+  transform: translate(-50%, -50%);
+}
+
+.land{
+  display: flex;
+  justify-content: center;
+  height: 90vh;
+  flex-direction: column;
+  align-items: center;
+
+}
+.land div{
+  font-size: 70px;
+  font-weight: bolder;
+  margin: 0 20px;
+}
+.land a{
+  padding: 30px;
+  width: 250px;
+  border-radius: 10px;
+  color: #fff;
+  background-color: rgb(0, 26, 255);
+}
+.land a button{
+  color: #fff;
+  font-size: 20px;
+  background-color: rgb(0, 26, 255);
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+
+@media screen and (max-width: 768px) {
+  .land div{
+    font-size: 50px;
+    margin: 0 10px;
+  }
+  .land a{
+    width: 200px;
+  }
+  .land a button{
+    font-size: 15px;
+  }
+}
