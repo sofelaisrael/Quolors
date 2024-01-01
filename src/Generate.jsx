@@ -24,17 +24,7 @@ export var allh = []
 
 
 function Generate() {
-    var key = {}
-    
-    if (!localStorage.length == 0) {
-        key[0] = localStorage.hex.split(',')
-        allh = key[0]
-    } else {
-        allh = []
-    }
-
     useEffect(() => {
-        Generate()
         var elem = document.getElementById("map")
         new Sortable(elem, {
             animation: 200,
@@ -45,27 +35,42 @@ function Generate() {
         })
     }, [])
 
-    const [clicked, setClicked] = useState(false)
-    
-    const [add, setAdd] = useState(false)
-
-    const [limit, setLimit] = useState([0, 1, 2, 3, 4])
-
-    const all = useRef([])
+    var [count, setCount, { history, pointer, back, forwards }] = StateHistory([], 5)
 
     const left = useRef(0)
 
-    const arr = useRef([])
+    const [arr, setArr] = useState([])
 
-    const Generate = () => {
-        var ar = [];
-        limit.forEach(l => {
-            var random = uniqolor.random()
-            arr.current = random
-            var r = Object.entries(arr.current)
-            ar.push(r)
-        })
-        setCount(ar)
+    const [add, setAdd] = useState(false)
+
+    const [v, setV] = useState([])
+    
+    const [dat, setDat] = useState({})
+
+    const ar = useRef([])
+
+    const handleGenerate = async (event) => {
+        var genarr = []
+        var len = 5
+        for (let i = 0; i < len; i++) {
+            try {
+                const first = await fetch("https://x-colors.yurace.pro/api/random")
+                const data = await first.json()
+                setDat({ ...dat, ...data })
+                const hex = data.hex.split('#')[1]
+                const second = await fetch(`https://www.thecolorapi.com/id?hex=${hex}`)
+                const secData = await second.json()
+                ar.current = secData
+                genarr.push(ar.current)
+            } catch (error) {
+                console.log(error);
+            }
+
+        }
+            setCount(genarr)
+            setArr(history[pointer])
+        console.log(history);
+
         left.current = history.length
     }
 
@@ -111,6 +116,9 @@ function Generate() {
         const body = document.querySelector('.pop')
         body.appendChild(f)
 
+        if (localStorage.hex.length == 0) {
+            allh = []
+        }
         localStorage.clear()
         allh.push(hex)
         if (allh[0] == '') {
@@ -130,12 +138,11 @@ function Generate() {
         }
     }
 
-    var [count, setCount, { history, pointer, back, forwards }] = StateHistory([], 5)
-
     const b = () => {
         left.current--
         pointer = left.current
     }
+
     const f = () => {
         left.current++
         pointer = left.current
@@ -143,53 +150,52 @@ function Generate() {
 
     return (
         <div className='gen'>
-            <Navbar />
+        <Navbar />
             <div id="map">
                 {history[pointer].map((c, key) => {
-                    const hexVal = c[0][1].split('#')
-                    const coVal = c[1][1]
-                    const copId = `copy${key}`
-                    const itId = `item${key}`
+                     const copId = `copy${key}`
                     return (
-                        <div id={itId} key={key} style={{ color: !c[1][1] ? 'white' : 'black', background: c[0][1] }} className="item">
-                            {hexVal}
-                            <div className="icons">
-                                <div className="sort">
-                                    <FaArrowsAltV />
-                                </div>
-                                <div className="copy">
-                                    <IoCopyOutline id={copId} onClick={() => {
-                                        copyToClipboard(hexVal[1])
-                                        setClicked(true)
-                                        setTimeout(() => {
-                                            setClicked(false)
-                                        }, 2000)
-                                    }} />
-                                </div>
-                                <div className="like" onClick={() => {
-                                        favouriteList(hexVal[1])
-                                        setAdd(true)
-                                        setTimeout(() => {
-                                            setAdd(false)
-                                        }, 2000)
-                                    }}>
-                                    <IoMdHeartEmpty />
-                                </div>
-                                <div className="del" onClick={() => {
-                                    del(itId)
-                                }}>
-                                    <FaTimes />
-                                </div>
-                            </div>
+                        <div key={key} style={{ background: c.hex.value, color: c.contrast.value }} className="item">
+                            {c.hex.value}
+                             <div className="icons">
+                                 <div className="sort">
+                                     <FaArrowsAltV />
+                                 </div>
+                                 <div className="copy">
+                                     <IoCopyOutline id={copId} onClick={() => {
+                                         copyToClipboard(c.hex.clean)
+                                         setClicked(true)
+                                         setTimeout(() => {
+                                             setClicked(false)
+                                         }, 2000)
+                                     }} />
+                                 </div>
+                                 <div className="like" onClick={() => {
+                                         favouriteList(c.hex.clean)
+                                         setAdd(true)
+                                         setTimeout(() => {
+                                             setAdd(false)
+                                         }, 2000)
+                                     }}>
+                                     <IoMdHeartEmpty />
+                                 </div>
+                                 <div className="del" onClick={() => {
+                                     del(itId)
+                                 }}>
+                                     <FaTimes />
+                                 </div>
+                             </div>
                         </div>
                     )
                 })}
             </div>
-            <div className="pop"></div>
-            <div className="controls">
-                <button className="btn" onClick={() => Generate()}>Generate</button>
 
-                <button disabled={left.current <= 3 ? true : false} className="btn arr" onClick={() => {
+            <div className="pop"></div>
+
+            <div className="controls">
+                <button className="btn" onClick={() => handleGenerate()}>Generate</button>
+
+                <button disabled={left.current <= 2 ? true : false} className="btn arr" onClick={() => {
                     back()
                     b()
                 }} title='Back'><BsArrow90DegLeft /></button>

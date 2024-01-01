@@ -14,6 +14,7 @@ function Favourite() {
   var key = {}
 
   useEffect(() => {
+    const all = document.querySelectorAll(".fav")
     if (localStorage.hex[0] == null) {
       //localStorage.hex.splice(0, 1)
       if (all.length == 0) {
