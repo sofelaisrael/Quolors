@@ -10,7 +10,7 @@ function Home() {
       <div className="land">
         <div>The super fast color pallettes Generator</div>
         <span className="cont">Get inspired by thousands of color schemes and start creating now</span>
-          <Link to={'/Quolors/Generate'}>
+          <Link to={'/Generate'}>
             <button>
               Start Your Generator!
             </button>

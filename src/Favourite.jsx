@@ -90,7 +90,7 @@ function Favourite() {
   return (
     <>
       <div className="head">
-        <Link to={'/Quolors/Generate'} className='ar'><FaArrowLeft size={30} /></Link>
+        <Link to={'/Generate'} className='ar'><FaArrowLeft size={30} /></Link>
         <div className="deleteAll" onClick={() => cle()}><FaTrash size={25} /></div>
         <div className="favh brand">FAVOURITES</div>
       </div>

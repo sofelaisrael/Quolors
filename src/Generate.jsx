@@ -205,7 +205,7 @@ function Generate() {
                     f()
                 }} title='Forwards'><BsArrow90DegRight /></button>
                 <div className="favourite" title='Favourites'>
-                    <Link to={'/Quolors/Favourite'}><FiHeart /></Link>
+                    <Link to={'/Favourite'}><FiHeart /></Link>
                 </div>
             </div>
         </div>

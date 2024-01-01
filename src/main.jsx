@@ -10,19 +10,19 @@ import Home from './Home';
 
 const router = createBrowserRouter([
   {
-    path: "/Quolors/",
+    path: "/",
     element: <App />,
     children: [
       {
-        path: "/Quolors/",
+        path: "/",
         element: <Home />
       },
       {
-        path: "/Quolors/Generate",
+        path: "/Generate",
         element: <Generate />
       },
       {
-        path: "/Quolors/Favourite",
+        path: "/Favourite",
         element: <Favourite />
       },
       

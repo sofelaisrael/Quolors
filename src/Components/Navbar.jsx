@@ -26,9 +26,9 @@ function Navbar() {
                     <div className={open ? 'side' : 'slide'}>
                         <div className="close"><FaTimes onClick={menu} /></div>
                         <ul>
-                            <Link style={linkstyles} to={'/Quolors/'}><li>Home</li></Link>
-                            <Link style={linkstyles} to={'/Quolors/Generate'}><li>Start Generator</li></Link>
-                            <Link style={linkstyles} to={'/Quolors/Favourite'}><li>Favourites</li></Link>
+                            <Link style={linkstyles} to={'/'}><li>Home</li></Link>
+                            <Link style={linkstyles} to={'/Generate'}><li>Start Generator</li></Link>
+                            <Link style={linkstyles} to={'/Favourite'}><li>Favourites</li></Link>
                         </ul>
                     </div>
                 </>
