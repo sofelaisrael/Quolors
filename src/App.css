@@ -175,6 +175,9 @@ button:disabled{
 @media screen and (max-width: 768px) {
   #map{
     flex-direction: column;
+    height: calc(100vh - 100px);
+  }
+  .gen{
     height: calc(100vh - 50px);
   }
   .item, .icons{
