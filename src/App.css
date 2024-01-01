@@ -16,12 +16,12 @@ a{
 
 #map{
   display: flex;
-  height: calc(100lvh - 100px);
+  height: calc(100vh - 100px);
 }
 
 .gen{
   overflow: hidden;
-  height: 100lvh;
+  height: 100vh;
   position: relative;
 }
 
