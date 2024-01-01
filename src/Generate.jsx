@@ -46,11 +46,6 @@ function Generate() {
     const [dat, setDat] = useState({})
 
     const ar = useRef([])
-    const [open, setOpen] = useState(false)
-  
-    const menu = () => {
-        setOpen(!open)
-    }
 
     const handleGenerate = async (event) => {
         var genarr = []
@@ -151,10 +146,25 @@ function Generate() {
         pointer = left.current
     }
 
+    useEffect(() => {
+        window.addEventListener('resize', () => {
+            const viewport = window.innerHeight
+
+            console.log(viewport);
+        })
+    })
+
+    const heightStyles = {
+        height: `${window.innerHeight}px`
+    }
+    const smallStyles = {
+        height: `${window.innerHeight - 100}px`
+    }
+
     return (
-        <div className='gen'>
+        <div className='gen' style={heightStyles}>
         <Navbar />
-            <div id="map">
+            <div id="map" style={smallStyles}>
                 {history[pointer].map((c, key) => {
                      const copId = `copy${key}`
                      const itId = `item${key}`
@@ -211,18 +221,6 @@ function Generate() {
                 <div className="favourite" title='Favourites'>
                     <Link to={'/Favourite'}><FiHeart /></Link>
                 </div>
-                <div className="menu"><FaBars onClick={menu} /></div>
-                <>
-                    <div className={open ? 'bg' : ''} onClick={menu}></div>
-                    <div className={open ? 'side' : 'slide'}>
-                        <div className="close"><FaTimes onClick={menu} /></div>
-                        <ul>
-                            <Link to={'/'}><li>Home</li></Link>
-                            <Link to={'/Generate'}><li>Start Generator</li></Link>
-                            <Link to={'/Favourite'}><li>Favourites</li></Link>
-                        </ul>
-                    </div>
-                </>
             </div>
         </div>
     );

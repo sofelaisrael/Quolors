@@ -16,12 +16,10 @@ a{
 
 #map{
   display: flex;
-  height: calc(100vh - 100px);
 }
 
 .gen{
   overflow: hidden;
-  height: 100vh;
   position: relative;
 }
 
@@ -79,12 +77,8 @@ svg{
 .controls{
   align-items: center;
   display: flex;
+  padding: 0 20px;
   height: 50px;
-  margin: 0 20px;
-  position: relative;
-}
-.controls .menu{
-  display: none;
 }
 .btn{
   height: 80%;
@@ -175,10 +169,6 @@ button:disabled{
 @media screen and (max-width: 768px) {
   #map{
     flex-direction: column;
-    height: calc(100vh - 100px);
-  }
-  .gen{
-    height: calc(100vh - 50px);
   }
   .item, .icons{
     flex-direction: row;
@@ -192,22 +182,6 @@ button:disabled{
   }
   .sort svg{
     transform: rotateZ(90deg);
-  }
-  .btg{
-    margin-left: 20px;
-  }
-  .controls{
-    margin: 0;
-    z-index: 100000;
-  }
-  .nav{
-    display: none;
-  }
-  .favourite{
-    margin-right: 50px;
-  }
-  .controls .menu{
-    display: block;
   }
 }
 
