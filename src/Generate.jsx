@@ -25,6 +25,7 @@ export var allh = []
 
 function Generate() {
     useEffect(() => {
+        handleGenerate()
         var elem = document.getElementById("map")
         new Sortable(elem, {
             animation: 200,
@@ -47,7 +48,7 @@ function Generate() {
 
     const ar = useRef([])
 
-    const handleGenerate = async (event) => {
+    const handleGenerate = async () => {
         var genarr = []
         var len = 5
         for (let i = 0; i < len; i++) {
@@ -146,14 +147,6 @@ function Generate() {
         pointer = left.current
     }
 
-    useEffect(() => {
-        window.addEventListener('resize', () => {
-            const viewport = window.innerHeight
-
-            console.log(viewport);
-        })
-    })
-
     const heightStyles = {
         height: `${window.innerHeight}px`
     }
@@ -209,7 +202,7 @@ function Generate() {
             <div className="controls">
                 <button className="btn btg" onClick={() => handleGenerate()}>Generate</button>
 
-                <button disabled={left.current <= 2 ? true : false} className="btn arr" onClick={() => {
+                <button disabled={left.current <= 3 ? true : false} className="btn arr" onClick={() => {
                     back()
                     b()
                 }} title='Back'><BsArrow90DegLeft /></button>
