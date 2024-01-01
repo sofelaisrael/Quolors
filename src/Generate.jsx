@@ -42,8 +42,6 @@ function Generate() {
     const [arr, setArr] = useState([])
 
     const [add, setAdd] = useState(false)
-
-    const [v, setV] = useState([])
     
     const [dat, setDat] = useState({})
 
@@ -154,8 +152,9 @@ function Generate() {
             <div id="map">
                 {history[pointer].map((c, key) => {
                      const copId = `copy${key}`
+                     const itId = `item${key}`
                     return (
-                        <div key={key} style={{ background: c.hex.value, color: c.contrast.value }} className="item">
+                        <div id={itId} key={key} style={{ background: c.hex.value, color: c.contrast.value }} className="item">
                             {c.hex.value}
                              <div className="icons">
                                  <div className="sort">
