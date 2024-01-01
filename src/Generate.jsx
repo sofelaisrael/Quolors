@@ -46,6 +46,11 @@ function Generate() {
     const [dat, setDat] = useState({})
 
     const ar = useRef([])
+    const [open, setOpen] = useState(false)
+  
+    const menu = () => {
+        setOpen(!open)
+    }
 
     const handleGenerate = async (event) => {
         var genarr = []
@@ -192,7 +197,7 @@ function Generate() {
             <div className="pop"></div>
 
             <div className="controls">
-                <button className="btn" onClick={() => handleGenerate()}>Generate</button>
+                <button className="btn btg" onClick={() => handleGenerate()}>Generate</button>
 
                 <button disabled={left.current <= 2 ? true : false} className="btn arr" onClick={() => {
                     back()
@@ -206,6 +211,18 @@ function Generate() {
                 <div className="favourite" title='Favourites'>
                     <Link to={'/Favourite'}><FiHeart /></Link>
                 </div>
+                <div className="menu"><FaBars onClick={menu} /></div>
+                <>
+                    <div className={open ? 'bg' : ''} onClick={menu}></div>
+                    <div className={open ? 'side' : 'slide'}>
+                        <div className="close"><FaTimes onClick={menu} /></div>
+                        <ul>
+                            <Link to={'/'}><li>Home</li></Link>
+                            <Link to={'/Generate'}><li>Start Generator</li></Link>
+                            <Link to={'/Favourite'}><li>Favourites</li></Link>
+                        </ul>
+                    </div>
+                </>
             </div>
         </div>
     );

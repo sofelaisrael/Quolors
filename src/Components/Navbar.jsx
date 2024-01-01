@@ -17,7 +17,7 @@ function Navbar() {
 
 
   return (
-    <div className=''>
+    <div className='nav'>
       <div className="navbar">
                 <div className="brand">Quolors</div>
                 <div className="menu"><FaBars onClick={menu} /></div>
