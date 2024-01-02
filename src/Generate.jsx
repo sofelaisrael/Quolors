@@ -16,17 +16,17 @@ import { IoMdHeart, IoMdHeartEmpty } from 'react-icons/io'
 import StateHistory from './Hooks/StateHistory';
 
 /* Random Color */
-import uniqolor from 'uniqolor';
+import randomColor from 'randomcolor'
 import Navbar from './Components/Navbar'
 
 
 export var allh = []
 
-
 function Generate() {
+
     useEffect(() => {
-        handleGenerate()
         var elem = document.getElementById("map")
+        getRandomColor()
         new Sortable(elem, {
             animation: 200,
             handle: '.sort',
@@ -43,34 +43,29 @@ function Generate() {
     const [arr, setArr] = useState([])
 
     const [add, setAdd] = useState(false)
+
+    const [clicked, setClicked] = useState(false)
     
     const [dat, setDat] = useState({})
 
     const ar = useRef([])
 
-    const handleGenerate = async () => {
+    async function getRandomColor() {
         var genarr = []
         var len = 5
         for (let i = 0; i < len; i++) {
-            try {
-                const first = await fetch("https://x-colors.yurace.pro/api/random")
-                const data = await first.json()
-                setDat({ ...dat, ...data })
-                const hex = data.hex.split('#')[1]
-                const second = await fetch(`https://www.thecolorapi.com/id?hex=${hex}`)
-                const secData = await second.json()
-                ar.current = secData
-                genarr.push(ar.current)
-            } catch (error) {
-                console.log(error);
-            }
-
+            var color = randomColor()
+            var hash = color.split('#')[1]
+            const second = await fetch(`https://www.thecolorapi.com/id?hex=${hash}`)
+            const secData = await second.json()
+            ar.current = secData
+            genarr.push(ar.current)
         }
-            setCount(genarr)
-            setArr(history[pointer])
-        console.log(history);
+        setCount(genarr)
+        setArr(history[pointer])
+    console.log(history);
 
-        left.current = history.length
+    left.current = history.length
     }
 
     const copyToClipboard = (hex) => {
@@ -150,9 +145,12 @@ function Generate() {
     const heightStyles = {
         height: `${window.innerHeight}px`
     }
+    
     const smallStyles = {
         height: `${window.innerHeight - 100}px`
     }
+
+    
 
     return (
         <div className='gen' style={heightStyles}>
@@ -163,7 +161,7 @@ function Generate() {
                      const itId = `item${key}`
                     return (
                         <div id={itId} key={key} style={{ background: c.hex.value, color: c.contrast.value }} className="item">
-                            {c.hex.value}
+                            {c.hex.clean}
                              <div className="icons">
                                  <div className="sort">
                                      <FaArrowsAltV />
@@ -200,9 +198,9 @@ function Generate() {
             <div className="pop"></div>
 
             <div className="controls">
-                <button className="btn btg" onClick={() => handleGenerate()}>Generate</button>
+                <button className="btn btg" onClick={() => getRandomColor()}>Generate</button>
 
-                <button disabled={left.current <= 3 ? true : false} className="btn arr" onClick={() => {
+                <button disabled={left.current <= 2 ? true : false} className="btn arr" onClick={() => {
                     back()
                     b()
                 }} title='Back'><BsArrow90DegLeft /></button>
