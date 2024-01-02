@@ -21,6 +21,7 @@
     "react-icons": "^4.11.0",
     "react-router-dom": "^6.15.0",
     "react-sortablejs": "^6.1.4",
+    "react-spinners": "^0.13.8",
     "sortablejs": "^1.15.0",
     "uniqolor": "^1.1.0"
   },

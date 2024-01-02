@@ -18,7 +18,13 @@ import StateHistory from './Hooks/StateHistory';
 /* Random Color */
 import randomColor from 'randomcolor'
 import Navbar from './Components/Navbar'
+import ClipLoader from "react-spinners/ClipLoader";
 
+const override = {
+  display: "block",
+  margin: "0 auto",
+  borderColor: "black",
+};
 
 export var allh = []
 
@@ -34,6 +40,10 @@ function Generate() {
             dragClass: 'setu',
             ghostClass: 'set'
         })
+        setTimeout(() => {
+        setLoading(false)
+            
+        }, 2000);
     }, [])
 
     var [count, setCount, { history, pointer, back, forwards }] = StateHistory([], 5)
@@ -46,11 +56,12 @@ function Generate() {
 
     const [clicked, setClicked] = useState(false)
     
-    const [dat, setDat] = useState({})
+    const [dat, setDat] = useState()
 
     const ar = useRef([])
 
     async function getRandomColor() {
+        setDat(true)
         var genarr = []
         var len = 5
         for (let i = 0; i < len; i++) {
@@ -63,7 +74,8 @@ function Generate() {
         }
         setCount(genarr)
         setArr(history[pointer])
-    console.log(history);
+        setDat(false)
+    console.log(dat);
 
     left.current = history.length
     }
@@ -150,9 +162,24 @@ function Generate() {
         height: `${window.innerHeight - 100}px`
     }
 
+    const [color, setColor] = useState('#FFFFFF')
+    let [loading, setLoading] = useState(true)
+
     
 
     return (
+        <>
+        <div className={loading ? 'load' : 'none'} style={heightStyles}>
+        <ClipLoader
+        color={color}
+        loading={loading}
+        cssOverride={override}
+        size={100}
+        aria-label="Loading Spinner"
+        data-testid="loader"
+      />
+        </div>
+        
         <div className='gen' style={heightStyles}>
         <Navbar />
             <div id="map" style={smallStyles}>
@@ -214,6 +241,7 @@ function Generate() {
                 </div>
             </div>
         </div>
+        </>
     );
 
 
