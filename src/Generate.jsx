@@ -75,7 +75,6 @@ function Generate() {
         setCount(genarr)
         setArr(history[pointer])
         setDat(false)
-    console.log(dat);
 
     left.current = history.length
     }
@@ -125,7 +124,6 @@ function Generate() {
         if (localStorage.hex.length == 0) {
             allh = []
         }
-        localStorage.clear()
         allh.push(hex)
         if (allh[0] == '') {
             allh.splice(0, 1)
