@@ -14,26 +14,36 @@
   },
   "proxy": "https://colr.org",
   "dependencies": {
+    "@reduxjs/toolkit": "^2.11.2",
+    "@tailwindcss/vite": "^4.2.2",
+    "autoprefixer": "^10.4.27",
     "axios": "^1.5.0",
+    "canvas-confetti": "^1.9.4",
+    "chroma-js": "^3.2.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^0.577.0",
+    "postcss": "^8.5.8",
     "randomcolor": "^0.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.11.0",
+    "react-redux": "^9.2.0",
     "react-router-dom": "^6.15.0",
-    "react-sortablejs": "^6.1.4",
     "react-spinners": "^0.13.8",
-    "sortablejs": "^1.15.0",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.2",
     "uniqolor": "^1.1.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
-    "@vitejs/plugin-react": "^4.0.3",
+    "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^8.45.0",
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
     "gh-pages": "^6.1.1",
-    "vite": "^4.4.5"
+    "vite": "^8.0.1"
   }
 }

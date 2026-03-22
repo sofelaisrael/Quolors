@@ -1,11 +1,18 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { Provider } from 'react-redux';
+import { store } from './store/index';
 import './index.css'
 import App from './App';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import Generate from './Generate';
-import Favourite from './Favourite';
+import Favorites from './Favorites';
 import Home from './Home';
+import Explore from './Explore';
+import Contrast from './Contrast';
+import Visualizer from './Visualizer';
+import ImagePicker from './ImagePicker';
+import GradientMaker from './GradientMaker';
 
 
 const router = createBrowserRouter([
@@ -23,7 +30,27 @@ const router = createBrowserRouter([
       },
       {
         path: "/Favourite",
-        element: <Favourite />
+        element: <Favorites />
+      },
+      {
+        path: "/Explore",
+        element: <Explore />
+      },
+      {
+        path: "/Contrast",
+        element: <Contrast />
+      },
+      {
+        path: "/Visualizer",
+        element: <Visualizer />
+      },
+      {
+        path: "/Picker",
+        element: <ImagePicker />
+      },
+      {
+        path: "/Gradient",
+        element: <GradientMaker />
       },
       
     ]
@@ -31,7 +58,9 @@ const router = createBrowserRouter([
 ])
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <>
-    <RouterProvider router={router} />
-  </>,
+  <React.StrictMode>
+    <Provider store={store}>
+      <RouterProvider router={router} />
+    </Provider>
+  </React.StrictMode>,
 )

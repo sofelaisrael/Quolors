@@ -1,249 +1,233 @@
-import React from 'react'
-import { useState, useEffect, useRef } from 'react'
-import './App.css'
+import React, { useEffect, useState, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  generatePalette,
+  undo,
+  redo,
+  reorderColors,
+  addColumn,
+  removeColumn,
+  toggleLock,
+  updateColor,
+  setPalette
+} from './store/slices/paletteSlice';
+import {
+  Lock,
+  Unlock,
+  Plus,
+  X,
+  GripVertical,
+  Copy,
+  Heart,
+  Undo2,
+  Redo2,
+  Maximize2,
+  Layers,
+  ChevronDown
+} from 'lucide-react';
+import { motion, Reorder, AnimatePresence, useDragControls } from 'framer-motion';
+import chroma from 'chroma-js';
+import { toggleFavorite } from './store/slices/favoritesSlice';
+import Navbar from './Components/Navbar';
+import ExportModal from './Components/ExportModal';
 
-import { Link } from 'react-router-dom'
+const ColorBar = ({ color, index, total }) => {
+  const dispatch = useDispatch();
+  const [showShades, setShowShades] = useState(false);
+  const contrastColor = chroma.contrast(color.hex, 'black') > 4.5 ? 'black' : 'white';
+  const dragControls = useDragControls();
 
-/*React Icons*/
-import { BsArrow90DegLeft, BsArrow90DegRight, BsDash } from 'react-icons/bs'
-import { FaArrowsAltV, FaBars, FaTimes, FaHeart } from 'react-icons/fa'
-import { FiHeart } from 'react-icons/fi'
-import { BiSolidLockAlt, BiSolidLockOpenAlt } from 'react-icons/bi'
-import { IoCopyOutline, IoHeart } from 'react-icons/io5'
-import { IoMdHeart, IoMdHeartEmpty } from 'react-icons/io'
+  const shades = chroma.scale([
+    chroma(color.hex).darken(2).hex(),
+    color.hex,
+    chroma(color.hex).brighten(2).hex()
+  ]).colors(9);
 
-/*Hooks*/
-import StateHistory from './Hooks/StateHistory';
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(color.hex.toUpperCase());
+  };
 
-/* Random Color */
-import randomColor from 'randomcolor'
-import Navbar from './Components/Navbar'
-import ClipLoader from "react-spinners/ClipLoader";
+  return (
+    <Reorder.Item
+      value={color}
+      dragListener={false}
+      dragControls={dragControls}
+      className="flex-1 flex flex-col items-center justify-center group h-full relative overflow-hidden"
+      style={{ backgroundColor: color.hex, color: contrastColor }}
+    >
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 pointer-events-none" />
 
-const override = {
-  display: "block",
-  margin: "0 auto",
-  borderColor: "black",
+      {/* Top Controls */}
+      <div className="absolute top-8 flex flex-col gap-6 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => dispatch(removeColumn(color.id))}
+          className="p-2 hover:bg-black/10 rounded-full transition-colors"
+        >
+          <X size={20} />
+        </button>
+        <div
+          onPointerDown={(e) => dragControls.start(e)}
+          className="cursor-grab active:cursor-grabbing p-2 hover:bg-black/10 rounded-full transition-colors"
+        >
+          <GripVertical size={20} />
+        </div>
+      </div>
+
+      {/* Main Color Info */}
+      <div className="flex flex-col items-center gap-4 z-10">
+         <button
+          onClick={() => dispatch(toggleLock(color.id))}
+          className="p-3 hover:bg-black/10 rounded-xl transition-all mb-4"
+        >
+          {color.locked ? <Lock size={28} fill="currentColor" /> : <Unlock size={28} />}
+        </button>
+
+        <h2
+          className="text-2xl font-bold tracking-wider cursor-pointer hover:scale-105 transition-transform uppercase"
+          onClick={copyToClipboard}
+        >
+          {color.hex.replace('#', '')}
+        </h2>
+
+        <p className="text-sm font-medium opacity-60 uppercase tracking-widest">
+          {chroma(color.hex).name()}
+        </p>
+      </div>
+
+      {/* Bottom Controls */}
+      <div className="absolute bottom-12 flex flex-col gap-6 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => setShowShades(!showShades)}
+          className="p-2 hover:bg-black/10 rounded-full transition-colors"
+        >
+          <Layers size={20} />
+        </button>
+        <button
+          onClick={copyToClipboard}
+          className="p-2 hover:bg-black/10 rounded-full transition-colors"
+        >
+          <Copy size={20} />
+        </button>
+      </div>
+
+      {/* Shades Panel */}
+      <AnimatePresence>
+        {showShades && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-24 bg-white rounded-xl shadow-2xl p-2 flex flex-col gap-1 z-50"
+          >
+            {shades.map((s, i) => (
+              <div
+                key={i}
+                onClick={() => {
+                    dispatch(updateColor({ id: color.id, hex: s }));
+                    setShowShades(false);
+                }}
+                className="w-12 h-10 rounded-md cursor-pointer hover:scale-110 transition-transform"
+                style={{ backgroundColor: s }}
+                title={s}
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Column Button */}
+      <button
+        onClick={() => dispatch(addColumn(index + 1))}
+        className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white text-black rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 transition-all z-20 border border-gray-100"
+      >
+        <Plus size={16} />
+      </button>
+    </Reorder.Item>
+  );
 };
-
-export var allh = []
 
 function Generate() {
+  const dispatch = useDispatch();
+  const colors = useSelector((state) => state.palette.colors);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
-    useEffect(() => {
-        var elem = document.getElementById("map")
-        getRandomColor()
-        new Sortable(elem, {
-            animation: 200,
-            handle: '.sort',
-            chosenClass: 'setup',
-            dragClass: 'setu',
-            ghostClass: 'set'
-        })
-        setTimeout(() => {
-        setLoading(false)
-            
-        }, 2000);
-    }, [])
-
-    var [count, setCount, { history, pointer, back, forwards }] = StateHistory([], 5)
-
-    const left = useRef(0)
-
-    const [arr, setArr] = useState([])
-
-    const [add, setAdd] = useState(false)
-
-    const [clicked, setClicked] = useState(false)
-    
-    const [dat, setDat] = useState()
-
-    const ar = useRef([])
-
-    async function getRandomColor() {
-        setDat(true)
-        var genarr = []
-        var len = 5
-        for (let i = 0; i < len; i++) {
-            var color = randomColor()
-            var hash = color.split('#')[1]
-            const second = await fetch(`https://www.thecolorapi.com/id?hex=${hash}`)
-            const secData = await second.json()
-            ar.current = secData
-            genarr.push(ar.current)
-        }
-        setCount(genarr)
-        setArr(history[pointer])
-        setDat(false)
-
-    left.current = history.length
+  const handleKeyDown = useCallback((e) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      dispatch(generatePalette());
     }
+  }, [dispatch]);
 
-    const copyToClipboard = (hex) => {
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    // Initialize history with current colors if history is empty
+    dispatch(setPalette(colors));
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
-        let f = document.createElement('span')
-        f.textContent = 'Copied To Clipboard!'
-        f.classList.add('popup')
-        setTimeout(() => {
-            f.remove()
-        }, 2000);
-        const body = document.querySelector('.pop')
-        body.appendChild(f)
+  return (
+    <div className="h-screen flex flex-col overflow-hidden bg-white">
+      <Navbar />
 
-
-        const el = document.createElement('textarea');
-        el.value = hex;
-        el.setAttribute('readonly', '');
-        el.style.position = 'absolute';
-        el.style.left = '-9999px';
-        document.body.appendChild(el);
-        const selected =
-            document.getSelection().rangeCount > 0
-                ? document.getSelection().getRangeAt(0)
-                : false;
-        el.select();
-        const success = document.execCommand('copy');
-        document.body.removeChild(el);
-        if (selected) {
-            document.getSelection().removeAllRanges();
-            document.getSelection().addRange(selected);
-        }
-        return success;
-    }
-
-    const favouriteList = (hex) => {
-        let f = document.createElement('span')
-        f.textContent = 'Added To Favourites!'
-        f.classList.add('popup')
-        setTimeout(() => {
-            f.remove()
-        }, 2000);
-        const body = document.querySelector('.pop')
-        body.appendChild(f)
-
-        if (localStorage.hex.length == 0) {
-            allh = []
-        }
-        allh.push(hex)
-        if (allh[0] == '') {
-            allh.splice(0, 1)
-        }
-        setAdd(false)
-        localStorage.setItem('hex', allh)
-    }
-
-    const del = (id) => {
-        let i = document.querySelectorAll('.item')
-        let item = document.querySelector(`#${id}`)
-        item.remove()
-        if (i.length <= 2) {
-            let ite = document.querySelector('.icons .del')
-            ite.style.display = 'none'
-        }
-    }
-
-    const b = () => {
-        left.current--
-        pointer = left.current
-    }
-
-    const f = () => {
-        left.current++
-        pointer = left.current
-    }
-
-    const heightStyles = {
-        height: `${window.innerHeight}px`
-    }
-    
-    const smallStyles = {
-        height: `${window.innerHeight - 100}px`
-    }
-
-    const [color, setColor] = useState('#FFFFFF')
-    let [loading, setLoading] = useState(true)
-
-    
-
-    return (
-        <>
-        <div className={loading ? 'load' : 'none'} style={heightStyles}>
-        <ClipLoader
-        color={color}
-        loading={loading}
-        cssOverride={override}
-        size={100}
-        aria-label="Loading Spinner"
-        data-testid="loader"
-      />
+      {/* Toolbar */}
+      <div className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white z-30">
+        <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-400 font-medium">Press <kbd className="bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-600">Space</kbd> to generate!</span>
         </div>
-        
-        <div className='gen' style={heightStyles}>
-        <Navbar />
-            <div id="map" style={smallStyles}>
-                {history[pointer].map((c, key) => {
-                     const copId = `copy${key}`
-                     const itId = `item${key}`
-                    return (
-                        <div id={itId} key={key} style={{ background: c.hex.value, color: c.contrast.value }} className="item">
-                            {c.hex.clean}
-                             <div className="icons">
-                                 <div className="sort">
-                                     <FaArrowsAltV />
-                                 </div>
-                                 <div className="copy">
-                                     <IoCopyOutline id={copId} onClick={() => {
-                                         copyToClipboard(c.hex.clean)
-                                         setClicked(true)
-                                         setTimeout(() => {
-                                             setClicked(false)
-                                         }, 2000)
-                                     }} />
-                                 </div>
-                                 <div className="like" onClick={() => {
-                                         favouriteList(c.hex.clean)
-                                         setAdd(true)
-                                         setTimeout(() => {
-                                             setAdd(false)
-                                         }, 2000)
-                                     }}>
-                                     <IoMdHeartEmpty />
-                                 </div>
-                                 <div className="del" onClick={() => {
-                                     del(itId)
-                                 }}>
-                                     <FaTimes />
-                                 </div>
-                             </div>
-                        </div>
-                    )
-                })}
-            </div>
 
-            <div className="pop"></div>
-
-            <div className="controls">
-                <button className="btn btg" onClick={() => getRandomColor()}>Generate</button>
-
-                <button disabled={left.current <= 2 ? true : false} className="btn arr" onClick={() => {
-                    back()
-                    b()
-                }} title='Back'><BsArrow90DegLeft /></button>
-
-                <button disabled={left.current == history.length ? true : false} className="btn arr" onClick={() => {
-                    forwards()
-                    f()
-                }} title='Forwards'><BsArrow90DegRight /></button>
-                <div className="favourite" title='Favourites'>
-                    <Link to={'/Favourite'}><FiHeart /></Link>
-                </div>
-            </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => dispatch(undo())}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+            title="Undo"
+          >
+            <Undo2 size={20} />
+          </button>
+          <button
+            onClick={() => dispatch(redo())}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+            title="Redo"
+          >
+            <Redo2 size={20} />
+          </button>
+          <div className="w-px h-6 bg-gray-200 mx-2" />
+          <button
+            onClick={() => setIsExportOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg transition-all font-semibold shadow-md active:scale-95"
+          >
+            <Layers size={18} />
+            <span>Export</span>
+          </button>
+          <button
+            onClick={() => dispatch(toggleFavorite(colors))}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all font-semibold shadow-md shadow-blue-200 active:scale-95 ml-2"
+          >
+            <Heart size={18} />
+            <span>Save</span>
+          </button>
         </div>
-        </>
-    );
+      </div>
 
+      {/* Generator Area */}
+      <Reorder.Group
+        axis="x"
+        values={colors}
+        onReorder={(newOrder) => dispatch(reorderColors(newOrder))}
+        className="flex-1 flex overflow-hidden w-full"
+      >
+        {colors.map((color, index) => (
+          <ColorBar
+            key={color.id}
+            color={color}
+            index={index}
+            total={colors.length}
+          />
+        ))}
+      </Reorder.Group>
 
-
-};
+      <ExportModal isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} />
+    </div>
+  );
+}
 
 export default Generate;
