@@ -9,29 +9,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import chroma from 'chroma-js';
 
 const EXPLORE_PALETTES = [
-  ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51'],
-  ['#f72585', '#b5179e', '#7209b7', '#560bad', '#480ca8', '#3f37c9', '#4361ee', '#4cc9f0'],
-  ['#03071e', '#370617', '#6a040f', '#9d0208', '#d00000', '#dc2f02', '#e85d04', '#f48c06', '#faa307', '#ffba08'],
-  ['#ffffff', '#8ecae6', '#219ebc', '#023047', '#ffb703', '#fb8500'],
-  ['#dad7cd', '#a3b18a', '#588157', '#3a5a40', '#344e41'],
-  ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#073b4c'],
-  ['#ff99c8', '#fcf6bd', '#d0f4de', '#a9def9', '#e4c1f9'],
-  ['#001219', '#005f73', '#0ae88c', '#94d2bd', '#e9d8a6', '#ee9b00', '#ca6702', '#bb3e03', '#ae2012', '#9b2226'],
-  ['#353535', '#3c6e71', '#ffffff', '#d9d9d9', '#284b63'],
-  ['#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f', '#90be6d', '#43aa8b', '#4d908e', '#577590', '#277da1'],
-  ['#22223b', '#4a4e69', '#9a8c98', '#c9ada7', '#f2e9e4'],
-  ['#606c38', '#283618', '#fefae0', '#dda15e', '#bc6c25'],
-  ['#ffcdb2', '#ffb4a2', '#e5989b', '#b5838d', '#6d597a'],
-  ['#118ab2', '#073b4c', '#ffd166', '#06d6a0', '#ef476f'],
-  ['#2b2d42', '#8d99ae', '#edf2f4', '#ef233c', '#d90429'],
-  ['#003049', '#d62828', '#f77f00', '#fcbf49', '#eae2b7'],
+  { name: 'ocean-breeze', colors: ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51'] },
+  { name: 'sunset-vibrance', colors: ['#f72585', '#b5179e', '#7209b7', '#560bad', '#480ca8', '#3f37c9', '#4361ee', '#4cc9f0'] },
+  { name: 'fire-gradient', colors: ['#03071e', '#370617', '#6a040f', '#9d0208', '#d00000', '#dc2f02', '#e85d04', '#f48c06', '#faa307', '#ffba08'] },
+  { name: 'coastal-waters', colors: ['#ffffff', '#8ecae6', '#219ebc', '#023047', '#ffb703', '#fb8500'] },
+  { name: 'forest-moss', colors: ['#dad7cd', '#a3b18a', '#588157', '#3a5a40', '#344e41'] },
+  { name: 'coral-reef', colors: ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#073b4c'] },
+  { name: 'cotton-candy', colors: ['#ff99c8', '#fcf6bd', '#d0f4de', '#a9def9', '#e4c1f9'] },
+  { name: 'deep-sea', colors: ['#001219', '#005f73', '#0ae88c', '#94d2bd', '#e9d8a6', '#ee9b00', '#ca6702', '#bb3e03', '#ae2012', '#9b2226'] },
+  { name: 'minimal-gray', colors: ['#353535', '#3c6e71', '#ffffff', '#d9d9d9', '#284b63'] },
+  { name: 'autumn-warmth', colors: ['#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f', '#90be6d', '#43aa8b', '#4d908e', '#577590', '#277da1'] },
+  { name: 'vintage-dust', colors: ['#22223b', '#4a4e69', '#9a8c98', '#c9ada7', '#f2e9e4'] },
+  { name: 'earth-tones', colors: ['#606c38', '#283618', '#fefae0', '#dda15e', '#bc6c25'] },
+  { name: 'peach-blush', colors: ['#ffcdb2', '#ffb4a2', '#e5989b', '#b5838d', '#6d597a'] },
+  { name: 'tropical-mix', colors: ['#118ab2', '#073b4c', '#ffd166', '#06d6a0', '#ef476f'] },
+  { name: 'midnight-blue', colors: ['#2b2d42', '#8d99ae', '#edf2f4', '#ef233c', '#d90429'] },
+  { name: 'desert-sun', colors: ['#003049', '#d62828', '#f77f00', '#fcbf49', '#eae2b7'] },
 ];
 
-const ExploreCard = ({ colors }) => {
+const ExploreCard = ({ palette }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const paletteObj = colors.map(hex => ({
+  const paletteObj = palette.colors.map(hex => ({
     hex,
     locked: false,
     id: Math.random().toString(36).substr(2, 9),
@@ -39,7 +39,7 @@ const ExploreCard = ({ colors }) => {
 
   const openInGenerator = () => {
     dispatch(setPalette(paletteObj));
-    navigate('/Generate');
+    navigate(`/Generate?palette=${palette.name}`);
   };
 
   return (
@@ -53,7 +53,7 @@ const ExploreCard = ({ colors }) => {
         onClick={openInGenerator}
         className="h-40 w-full flex rounded-2xl overflow-hidden mb-6 cursor-pointer hover:scale-[1.02] transition-transform shadow-lg shadow-gray-100"
       >
-        {colors.map((hex, i) => (
+        {palette.colors.map((hex, i) => (
           <div
             key={i}
             className="flex-1"
@@ -65,8 +65,8 @@ const ExploreCard = ({ colors }) => {
 
       <div className="flex items-center justify-between mt-auto">
         <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-gray-400 bg-gray-50 px-2 py-1 rounded-md uppercase tracking-tighter">
-                {colors.length} Colors
+            <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase tracking-tighter">
+                {palette.name}
             </span>
         </div>
         <div className="flex items-center gap-2">
@@ -98,8 +98,9 @@ function Explore() {
     return EXPLORE_PALETTES.filter(palette => {
       if (!search) return true;
       const s = search.toLowerCase();
-      // Simple search by color names or hex (chroma can help here)
-      return palette.some(hex => hex.toLowerCase().includes(s));
+      // Search by palette name or color hex
+      return palette.name.toLowerCase().includes(s) || 
+             palette.colors.some(hex => hex.toLowerCase().includes(s));
     });
   }, [search]);
 
@@ -142,7 +143,7 @@ function Explore() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
           <AnimatePresence>
             {filteredPalettes.map((palette, i) => (
-              <ExploreCard key={i} colors={palette} />
+              <ExploreCard key={palette.name} palette={palette} />
             ))}
           </AnimatePresence>
         </div>

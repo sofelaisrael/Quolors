@@ -1,11 +1,29 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, Github, Heart } from 'lucide-react'
+import { useSelector, useDispatch } from 'react-redux'
+import { Menu, X, Github, Heart, User, LogOut } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { logout } from '../store/slices/authSlice'
+import { signOut } from '../utils/supabase'
 
 function Navbar() {
   const [open, setOpen] = useState(false)
   const location = useLocation()
+  const dispatch = useDispatch()
+  const { isAuthenticated, user } = useSelector(state => state.auth)
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      dispatch(logout());
+      setOpen(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still dispatch logout to clear local state
+      dispatch(logout());
+      setOpen(false);
+    }
+  }
 
   const navLinks = [
     { name: 'Generator', path: '/Generate' },
@@ -45,9 +63,38 @@ function Navbar() {
         <Link to="/Favourite" aria-label="Favorites" className="p-2 text-gray-400 hover:text-red-500 transition-colors">
           <Heart size={20} />
         </Link>
-        <button className="hidden md:block px-4 py-2 text-sm font-bold bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
-          Sign up
-        </button>
+        
+        {isAuthenticated ? (
+          <div className="hidden md:flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-xl">
+              <User size={16} className="text-gray-600" />
+              <span className="text-sm font-bold text-gray-900">{user?.name || user?.email}</span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 text-sm font-bold bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-2"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+          </div>
+        ) : (
+          <div className="hidden md:flex items-center gap-3">
+            <Link 
+              to="/Login" 
+              className="px-4 py-2 text-sm font-bold text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              Sign in
+            </Link>
+            <Link 
+              to="/Signup" 
+              className="px-4 py-2 text-sm font-bold bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              Sign up
+            </Link>
+          </div>
+        )}
+        
         <button
           className="md:hidden p-2 text-gray-600"
           onClick={() => setOpen(!open)}
@@ -80,6 +127,31 @@ function Navbar() {
               <Link to="/Favourite" onClick={() => setOpen(false)} className="text-lg font-bold text-gray-900 px-4 py-2 hover:bg-gray-50 rounded-xl">
                 Favorites
               </Link>
+              
+              {isAuthenticated ? (
+                <>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-xl">
+                    <User size={16} className="text-gray-600" />
+                    <span className="text-sm font-bold text-gray-900">{user?.name || user?.email}</span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="text-lg font-bold text-red-600 px-4 py-2 hover:bg-red-50 rounded-xl text-left flex items-center gap-2"
+                  >
+                    <LogOut size={18} />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/Login" onClick={() => setOpen(false)} className="text-lg font-bold text-gray-900 px-4 py-2 hover:bg-gray-50 rounded-xl">
+                    Sign in
+                  </Link>
+                  <Link to="/Signup" onClick={() => setOpen(false)} className="text-lg font-bold bg-gray-900 text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors">
+                    Sign up
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}
