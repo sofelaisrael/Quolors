@@ -42,7 +42,7 @@ function Navbar() {
       </div>
 
       <div className="flex items-center gap-4">
-        <Link to="/Favourite" className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+        <Link to="/Favourite" aria-label="Favorites" className="p-2 text-gray-400 hover:text-red-500 transition-colors">
           <Heart size={20} />
         </Link>
         <button className="hidden md:block px-4 py-2 text-sm font-bold bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
@@ -77,8 +77,8 @@ function Navbar() {
                 </Link>
               ))}
               <hr className="border-gray-100" />
-              <Link to="/Favourite" className="text-lg font-bold text-gray-900 px-4 py-2 hover:bg-gray-50 rounded-xl">
-                Favourites
+              <Link to="/Favourite" onClick={() => setOpen(false)} className="text-lg font-bold text-gray-900 px-4 py-2 hover:bg-gray-50 rounded-xl">
+                Favorites
               </Link>
             </div>
           </motion.div>

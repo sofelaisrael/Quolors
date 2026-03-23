@@ -3,15 +3,13 @@ import { createSlice } from '@reduxjs/toolkit';
 const loadFavorites = () => {
   try {
     const saved = localStorage.getItem('quolors_favorites');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved) : { palettes: [], collections: [] };
   } catch {
-    return [];
+    return { palettes: [], collections: [] };
   }
 };
 
-const initialState = {
-  palettes: loadFavorites(),
-};
+const initialState = loadFavorites();
 
 const favoritesSlice = createSlice({
   name: 'favorites',
@@ -28,17 +26,47 @@ const favoritesSlice = createSlice({
         state.palettes.push({
           id: paletteId,
           colors: palette,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          collectionId: null
         });
       }
-      localStorage.setItem('quolors_favorites', JSON.stringify(state.palettes));
+      localStorage.setItem('quolors_favorites', JSON.stringify(state));
     },
     removeFavorite: (state, action) => {
       state.palettes = state.palettes.filter(p => p.id !== action.payload);
-      localStorage.setItem('quolors_favorites', JSON.stringify(state.palettes));
+      localStorage.setItem('quolors_favorites', JSON.stringify(state));
     },
+    createCollection: (state, action) => {
+      state.collections.push({
+        id: Math.random().toString(36).substr(2, 9),
+        name: action.payload,
+        date: new Date().toISOString()
+      });
+      localStorage.setItem('quolors_favorites', JSON.stringify(state));
+    },
+    deleteCollection: (state, action) => {
+        state.collections = state.collections.filter(c => c.id !== action.payload);
+        // Reset collectionId for palettes in this collection
+        state.palettes.forEach(p => {
+            if (p.collectionId === action.payload) p.collectionId = null;
+        });
+        localStorage.setItem('quolors_favorites', JSON.stringify(state));
+    },
+    movePaletteToCollection: (state, action) => {
+        const { paletteId, collectionId } = action.payload;
+        const palette = state.palettes.find(p => p.id === paletteId);
+        if (palette) palette.collectionId = collectionId;
+        localStorage.setItem('quolors_favorites', JSON.stringify(state));
+    }
   },
 });
 
-export const { toggleFavorite, removeFavorite } = favoritesSlice.actions;
+export const {
+    toggleFavorite,
+    removeFavorite,
+    createCollection,
+    deleteCollection,
+    movePaletteToCollection
+} = favoritesSlice.actions;
+
 export default favoritesSlice.reducer;

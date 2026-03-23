@@ -15,6 +15,7 @@ const initialState = {
   })),
   history: [],
   pointer: -1,
+  theoryRule: 'Monochromatic', // Default rule
 };
 
 const paletteSlice = createSlice({
@@ -23,7 +24,6 @@ const paletteSlice = createSlice({
   reducers: {
     setPalette: (state, action) => {
       state.colors = action.payload;
-      // Only push to history if it's different from the current pointer
       const currentState = JSON.stringify(state.colors);
       const lastState = state.pointer >= 0 ? JSON.stringify(state.history[state.pointer]) : null;
 
@@ -37,11 +37,52 @@ const paletteSlice = createSlice({
           }
       }
     },
+    setTheoryRule: (state, action) => {
+      state.theoryRule = action.payload;
+    },
     generatePalette: (state) => {
-      state.colors = state.colors.map(color =>
-        color.locked ? color : { ...color, hex: chroma.random().hex() }
+      const lockedColors = state.colors.filter(c => c.locked);
+      let baseColor;
+
+      if (lockedColors.length > 0) {
+        baseColor = chroma(lockedColors[0].hex);
+      } else {
+        baseColor = chroma.random();
+      }
+
+      const count = state.colors.length;
+      let newHexes = [];
+
+      switch (state.theoryRule) {
+        case 'Monochromatic':
+          newHexes = chroma.scale([baseColor.darken(2), baseColor, baseColor.brighten(2)])
+            .mode('lab').colors(count);
+          break;
+        case 'Analogous':
+          newHexes = Array.from({ length: count }, (_, i) =>
+            baseColor.set('hsl.h', (baseColor.get('hsl.h') + (i * 20)) % 360).hex()
+          );
+          break;
+        case 'Complementary':
+          newHexes = Array.from({ length: count }, (_, i) => {
+            if (i < count / 2) return baseColor.darken(i * 0.5).hex();
+            const comp = baseColor.set('hsl.h', (baseColor.get('hsl.h') + 180) % 360);
+            return comp.brighten((i - count / 2) * 0.5).hex();
+          });
+          break;
+        case 'Triadic':
+          newHexes = Array.from({ length: count }, (_, i) =>
+            baseColor.set('hsl.h', (baseColor.get('hsl.h') + (i * 120)) % 360).hex()
+          );
+          break;
+        default:
+          newHexes = Array.from({ length: count }, () => chroma.random().hex());
+      }
+
+      state.colors = state.colors.map((color, i) =>
+        color.locked ? color : { ...color, hex: newHexes[i] || chroma.random().hex() }
       );
-      // Update history
+
       state.history = state.history.slice(0, state.pointer + 1);
       state.history.push(JSON.parse(JSON.stringify(state.colors)));
       state.pointer = state.history.length - 1;
@@ -57,7 +98,6 @@ const paletteSlice = createSlice({
     },
     reorderColors: (state, action) => {
       state.colors = action.payload;
-      // Also push reorder to history
       state.history = state.history.slice(0, state.pointer + 1);
       state.history.push(JSON.parse(JSON.stringify(state.colors)));
       state.pointer = state.history.length - 1;
@@ -70,7 +110,6 @@ const paletteSlice = createSlice({
           locked: false,
           id: Math.random().toString(36).substr(2, 9),
         });
-        // Push to history
         state.history = state.history.slice(0, state.pointer + 1);
         state.history.push(JSON.parse(JSON.stringify(state.colors)));
         state.pointer = state.history.length - 1;
@@ -79,7 +118,6 @@ const paletteSlice = createSlice({
     removeColumn: (state, action) => {
       if (state.colors.length > 2) {
         state.colors = state.colors.filter(c => c.id !== action.payload);
-        // Push to history
         state.history = state.history.slice(0, state.pointer + 1);
         state.history.push(JSON.parse(JSON.stringify(state.colors)));
         state.pointer = state.history.length - 1;
@@ -102,6 +140,7 @@ const paletteSlice = createSlice({
 
 export const {
   setPalette,
+  setTheoryRule,
   generatePalette,
   toggleLock,
   updateColor,

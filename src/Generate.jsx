@@ -4,6 +4,7 @@ import {
   generatePalette,
   undo,
   redo,
+  setTheoryRule,
   reorderColors,
   addColumn,
   removeColumn,
@@ -149,6 +150,7 @@ const ColorBar = ({ color, index, total }) => {
 function Generate() {
   const dispatch = useDispatch();
   const colors = useSelector((state) => state.palette.colors);
+  const theoryRule = useSelector((state) => state.palette.theoryRule);
   const [isExportOpen, setIsExportOpen] = useState(false);
 
   const handleKeyDown = useCallback((e) => {
@@ -171,8 +173,21 @@ function Generate() {
 
       {/* Toolbar */}
       <div className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white z-30">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-8">
             <span className="text-sm text-gray-400 font-medium">Press <kbd className="bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-600">Space</kbd> to generate!</span>
+
+            <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Rule:</span>
+                <select
+                    value={theoryRule}
+                    onChange={(e) => dispatch(setTheoryRule(e.target.value))}
+                    className="h-8 px-3 text-xs font-bold bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
+                >
+                    {['Random', 'Monochromatic', 'Analogous', 'Complementary', 'Triadic'].map(rule => (
+                        <option key={rule} value={rule}>{rule}</option>
+                    ))}
+                </select>
+            </div>
         </div>
 
         <div className="flex items-center gap-1">
