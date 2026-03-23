@@ -8,14 +8,18 @@ const generateRandomColor = () => ({
 });
 
 const initialState = {
-  colors: Array.from({ length: 5 }, () => ({
-    hex: chroma.random().hex(),
-    locked: false,
-    id: Math.random().toString(36).substr(2, 9),
-  })),
+  colors: Array.from({ length: 5 }, () => {
+    const hex = chroma.random().hex();
+    return {
+      hex: hex,
+      name: chroma(hex).name(),
+      locked: false,
+      id: Math.random().toString(36).substr(2, 9),
+    };
+  }),
+  theoryRule: 'Random',
   history: [],
   pointer: -1,
-  theoryRule: 'Monochromatic', // Default rule
 };
 
 const paletteSlice = createSlice({
@@ -24,6 +28,7 @@ const paletteSlice = createSlice({
   reducers: {
     setPalette: (state, action) => {
       state.colors = action.payload;
+      // Only push to history if it's different from the current pointer
       const currentState = JSON.stringify(state.colors);
       const lastState = state.pointer >= 0 ? JSON.stringify(state.history[state.pointer]) : null;
 
@@ -37,67 +42,70 @@ const paletteSlice = createSlice({
           }
       }
     },
-    setTheoryRule: (state, action) => {
-      state.theoryRule = action.payload;
-    },
     generatePalette: (state) => {
-      const lockedColors = state.colors.filter(c => c.locked);
-      let baseColor;
-
-      if (lockedColors.length > 0) {
-        baseColor = chroma(lockedColors[0].hex);
+      if (state.theoryRule === 'Random') {
+        state.colors = state.colors.map(color => {
+          if (color.locked) return color;
+          const newHex = chroma.random().hex();
+          return { ...color, hex: newHex, name: chroma(newHex).name() };
+        });
       } else {
-        baseColor = chroma.random();
+        // Find first unlocked or first color to use as base
+        const baseColor = state.colors.find(c => c.locked)?.hex || state.colors[0].hex;
+        let palette;
+        
+        switch (state.theoryRule) {
+          case 'Monochromatic':
+            palette = chroma.scale([chroma(baseColor).darken(2), baseColor, chroma(baseColor).brighten(2)])
+              .mode('lch').colors(state.colors.length);
+            break;
+          case 'Analogous':
+            palette = Array.from({ length: state.colors.length }, (_, i) => 
+              chroma(baseColor).set('hsl.h', (chroma(baseColor).get('hsl.h') + (i * 20)) % 360).hex()
+            );
+            break;
+          case 'Complementary':
+            const comp = chroma(baseColor).set('hsl.h', (chroma(baseColor).get('hsl.h') + 180) % 360).hex();
+            palette = chroma.scale([baseColor, comp]).mode('lch').colors(state.colors.length);
+            break;
+          case 'Triadic':
+            palette = Array.from({ length: state.colors.length }, (_, i) => 
+              chroma(baseColor).set('hsl.h', (chroma(baseColor).get('hsl.h') + (i * 120)) % 360).hex()
+            );
+            break;
+          default:
+            palette = state.colors.map(() => chroma.random().hex());
+        }
+
+        state.colors = state.colors.map((color, i) => 
+          color.locked ? color : { ...color, hex: palette[i], name: chroma(palette[i]).name() }
+        );
       }
 
-      const count = state.colors.length;
-      let newHexes = [];
-
-      switch (state.theoryRule) {
-        case 'Monochromatic':
-          newHexes = chroma.scale([baseColor.darken(2), baseColor, baseColor.brighten(2)])
-            .mode('lab').colors(count);
-          break;
-        case 'Analogous':
-          newHexes = Array.from({ length: count }, (_, i) =>
-            baseColor.set('hsl.h', (baseColor.get('hsl.h') + (i * 20)) % 360).hex()
-          );
-          break;
-        case 'Complementary':
-          newHexes = Array.from({ length: count }, (_, i) => {
-            if (i < count / 2) return baseColor.darken(i * 0.5).hex();
-            const comp = baseColor.set('hsl.h', (baseColor.get('hsl.h') + 180) % 360);
-            return comp.brighten((i - count / 2) * 0.5).hex();
-          });
-          break;
-        case 'Triadic':
-          newHexes = Array.from({ length: count }, (_, i) =>
-            baseColor.set('hsl.h', (baseColor.get('hsl.h') + (i * 120)) % 360).hex()
-          );
-          break;
-        default:
-          newHexes = Array.from({ length: count }, () => chroma.random().hex());
-      }
-
-      state.colors = state.colors.map((color, i) =>
-        color.locked ? color : { ...color, hex: newHexes[i] || chroma.random().hex() }
-      );
-
+      // Update history
       state.history = state.history.slice(0, state.pointer + 1);
       state.history.push(JSON.parse(JSON.stringify(state.colors)));
       state.pointer = state.history.length - 1;
+    },
+    setTheoryRule: (state, action) => {
+      state.theoryRule = action.payload;
     },
     toggleLock: (state, action) => {
       const color = state.colors.find(c => c.id === action.payload);
       if (color) color.locked = !color.locked;
     },
     updateColor: (state, action) => {
-      const { id, hex } = action.payload;
+      const { id, hex, name } = action.payload;
       const color = state.colors.find(c => c.id === id);
-      if (color) color.hex = hex;
+      if (color) {
+        if (hex) color.hex = hex;
+        if (name) color.name = name;
+        else if (hex) color.name = chroma(hex).name();
+      }
     },
     reorderColors: (state, action) => {
       state.colors = action.payload;
+      // Also push reorder to history
       state.history = state.history.slice(0, state.pointer + 1);
       state.history.push(JSON.parse(JSON.stringify(state.colors)));
       state.pointer = state.history.length - 1;
@@ -105,11 +113,26 @@ const paletteSlice = createSlice({
     addColumn: (state, action) => {
       if (state.colors.length < 10) {
         const index = action.payload ?? state.colors.length;
+        
+        let newHex = chroma.random().hex();
+        
+        // If inserting between two colors, create a blended color
+        if (index > 0 && index < state.colors.length) {
+          const colorLeft = state.colors[index - 1].hex;
+          const colorRight = state.colors[index].hex;
+          
+          // Randomly mix the two colors (between 25% and 75% bias to either side)
+          const ratio = 0.25 + Math.random() * 0.5;
+          newHex = chroma.mix(colorLeft, colorRight, ratio, 'lch').hex();
+        }
+
         state.colors.splice(index, 0, {
-          hex: chroma.random().hex(),
+          hex: newHex,
+          name: chroma(newHex).name(),
           locked: false,
           id: Math.random().toString(36).substr(2, 9),
         });
+        // Push to history
         state.history = state.history.slice(0, state.pointer + 1);
         state.history.push(JSON.parse(JSON.stringify(state.colors)));
         state.pointer = state.history.length - 1;
@@ -118,6 +141,7 @@ const paletteSlice = createSlice({
     removeColumn: (state, action) => {
       if (state.colors.length > 2) {
         state.colors = state.colors.filter(c => c.id !== action.payload);
+        // Push to history
         state.history = state.history.slice(0, state.pointer + 1);
         state.history.push(JSON.parse(JSON.stringify(state.colors)));
         state.pointer = state.history.length - 1;
@@ -140,8 +164,8 @@ const paletteSlice = createSlice({
 
 export const {
   setPalette,
-  setTheoryRule,
   generatePalette,
+  setTheoryRule,
   toggleLock,
   updateColor,
   reorderColors,
