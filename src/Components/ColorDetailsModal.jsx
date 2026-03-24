@@ -1,232 +1,166 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Heart, ExternalLink, Palette, Download, Eye } from 'lucide-react';
+import { X, Sparkles, MoreHorizontal } from 'lucide-react';
+import { closeColorDetailsModal } from '../store/slices/uiSlice';
 import chroma from 'chroma-js';
-import { useSelector, useDispatch } from 'react-redux';
-import { toggleFavorite } from '../store/slices/favoritesSlice';
-import { useNotifications } from '../utils/notifications';
 
-const ColorDetailsModal = ({ isOpen, onClose, colorHex }) => {
-  const [colorName, setColorName] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
-  
+const ColorDetailsModal = () => {
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector(state => state.auth);
-  const { addNotification } = useNotifications();
+  const { isColorDetailsModalOpen: isOpen, selectedColorForDetails: color } = useSelector((state) => state.ui);
 
-  const color = chroma(colorHex);
+  if (!isOpen || !color) return null;
 
-  useEffect(() => {
-    const fetchColorName = async () => {
-      try {
-        const response = await fetch(`https://www.thecolorapi.com/id?hex=${colorHex.replace('#', '')}`);
-        const data = await response.json();
-        if (data.name) {
-          setColorName(data.name.value);
-        }
-      } catch (error) {
-        console.error('Failed to fetch color name:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const hex = color.hex;
+  const rgb = chroma(hex).rgb();
+  const hsv = chroma(hex).hsv();
+  const hsb = [Math.round(hsv[0] || 0), Math.round(hsv[1] * 100), Math.round(hsv[2] * 100)];
+  const cmyk = chroma(hex).cmyk().map(v => Math.round(v * 100));
 
-    if (isOpen && colorHex) {
-      fetchColorName();
-    }
-  }, [isOpen, colorHex]);
+  const shades = chroma.scale(['white', hex, 'black']).colors(11);
+  const tints = chroma.scale(['white', hex]).colors(6).slice(1);
+  const tones = chroma.scale(['gray', hex]).colors(6).slice(1);
 
-  const copyToClipboard = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      addNotification('Copied to clipboard!', 'success');
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      addNotification('Failed to copy', 'error');
-    }
-  };
+  // Mock data for Psychology, Meaning, and Applications based on brightness
+  const brightness = chroma(hex).luminance();
+  const colorName = chroma(hex).name();
 
-  const isFavorite = () => {
-    // This would need to be implemented based on your favorites structure
-    return false;
-  };
+  const psychology = brightness > 0.5
+    ? ["Inspires Optimism", "Evokes Clarity", "Creates Energy", "Promotes Openness"]
+    : ["Evokes Introspection", "Inspires Confidence", "Creates Intimacy", "Embraces Mystery"];
 
-  const handleFavorite = () => {
-    if (!isAuthenticated) {
-      addNotification('Please login to save colors', 'warning');
-      return;
-    }
-    const colorObj = {
-      hex: colorHex,
-      name: colorName,
-      id: Math.random().toString(36).substr(2, 9),
-    };
-    dispatch(toggleFavorite([colorObj]));
-  };
+  const meaning = brightness > 0.5
+    ? ["Joy", "Intellect", "Vivacity", "Freshness"]
+    : ["Depth", "Emotion", "Elegance", "Intensity"];
 
-  if (!isOpen) return null;
+  const applications = [
+    "Fashion Design", "Interior Design", "Digital Marketing", "Branding", "UI Design"
+  ];
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end justify-center">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-          onClick={onClose}
+          onClick={() => dispatch(closeColorDetailsModal())}
+          className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         />
 
-        {/* Modal */}
+        {/* Modal Content */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="relative bg-white rounded-t-3xl w-full max-w-2xl mx-auto max-h-[85vh] overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="relative w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-100">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">{colorName || 'Color Details'}</h2>
-              <p className="text-lg font-mono text-gray-700">{colorHex.toUpperCase()}</p>
+          {/* Color Preview Header */}
+          <div
+            className="h-48 relative flex items-start justify-end p-4"
+            style={{ backgroundColor: hex }}
+          >
+            <div className="flex gap-2">
+              <button className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white backdrop-blur-sm transition-colors">
+                <Sparkles size={20} />
+              </button>
+              <button className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white backdrop-blur-sm transition-colors">
+                <MoreHorizontal size={20} />
+              </button>
+              <button
+                onClick={() => dispatch(closeColorDetailsModal())}
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white backdrop-blur-sm transition-colors"
+              >
+                <X size={20} />
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X size={20} />
-            </button>
           </div>
 
-          {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[60vh]">
-            {/* Color Preview */}
-            <div className="mb-8">
-              <div
-                className="h-32 rounded-2xl shadow-lg flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
-                style={{ backgroundColor: colorHex }}
-                onClick={() => copyToClipboard(colorHex)}
-              >
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/10 rounded-2xl">
-                  <Copy size={24} className="text-white" />
-                </div>
-              </div>
+          <div className="flex-1 overflow-y-auto p-8">
+            {/* Title and Hex */}
+            <div className="flex items-baseline gap-4 mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 capitalize">~{colorName}</h2>
+              <span className="text-xl font-medium text-gray-400 uppercase tracking-wider">{hex}</span>
             </div>
 
-            {/* Color Values */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">Color Values</h3>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors group" onClick={() => copyToClipboard(colorHex)}>
-                    <span className="font-medium text-gray-600">HEX</span>
-                    <span className="font-mono font-bold text-gray-900 group-hover:text-blue-600">{colorHex.toUpperCase()}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors group" onClick={() => copyToClipboard(color.rgb().join(', '))}>
-                    <span className="font-medium text-gray-600">RGB</span>
-                    <span className="font-mono font-bold text-gray-900 group-hover:text-blue-600">{color.rgb().join(', ')}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors group" onClick={() => copyToClipboard(`hsl(${Math.round(color.hsl()[0])}, ${Math.round(color.hsl()[1])}%, ${Math.round(color.hsl()[2])}%)`)}>
-                    <span className="font-medium text-gray-600">HSL</span>
-                    <span className="font-mono font-bold text-gray-900 group-hover:text-blue-600">
-                      {Math.round(color.hsl()[0])}°, {Math.round(color.hsl()[1])}%, {Math.round(color.hsl()[2])}%
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              {colorName} is a versatile color that {brightness > 0.5 ? 'radiates light and energy' : 'offers depth and sophistication'}. It is often used to {brightness > 0.5 ? 'brighten up spaces' : 'create focal points'} and {meaning[0].toLowerCase()} in various design applications.
+            </p>
+
+            {/* Sections */}
+            <div className="space-y-8">
+              {/* Psychology */}
+              <div>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-4">Psychology</h3>
+                <div className="flex flex-wrap gap-2">
+                  {psychology.map((tag) => (
+                    <span key={tag} className="px-3 py-1.5 bg-gray-50 text-gray-700 text-sm font-bold rounded-lg border border-gray-100">
+                      {tag}
                     </span>
-                  </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">Actions</h3>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => copyToClipboard(colorHex)}
-                    className="flex items-center justify-center gap-2 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                  >
-                    <Copy size={18} />
-                    {copied ? 'Copied!' : 'Copy HEX'}
-                  </button>
-                  
-                  <button
-                    onClick={handleFavorite}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-lg transition-colors font-medium ${
-                      isFavorite()
-                        ? 'bg-red-500 text-white hover:bg-red-600'
-                        : isAuthenticated
-                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        : 'bg-gray-400 text-white cursor-not-allowed'
-                    }`}
-                  >
-                    <Heart size={18} fill={isFavorite() ? 'currentColor' : 'none'} />
-                    {isFavorite() ? 'Saved' : (isAuthenticated ? 'Save' : 'Login to Save')}
-                  </button>
-                  
-                  <button
-                    className="flex items-center justify-center gap-2 p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                  >
-                    <Palette size={18} />
-                    Generate Palette
-                  </button>
-                  
-                  <button
-                    className="flex items-center justify-center gap-2 p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-                  >
-                    <Download size={18} />
-                    Download Info
-                  </button>
+              {/* Meaning */}
+              <div>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-4">Meaning</h3>
+                <div className="flex flex-wrap gap-2">
+                  {meaning.map((tag) => (
+                    <span key={tag} className="px-3 py-1.5 bg-gray-50 text-gray-700 text-sm font-bold rounded-lg border border-gray-100">
+                      {tag}
+                    </span>
+                  ))}
                 </div>
               </div>
-            </div>
 
-            {/* Color Variations */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">Color Variations</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[0.1, 0.2, 0.3, 0.4].map((lightness, i) => (
-                  <div key={`light-${i}`} className="space-y-2">
-                    <p className="text-sm font-medium text-gray-600">Light {i + 1}</p>
-                    <div
-                      className="h-16 rounded-lg"
-                      style={{ backgroundColor: color.set('hsl.l', lightness).hex() }}
-                    />
-                    <p className="text-xs font-mono text-center text-gray-500">
-                      {color.set('hsl.l', lightness).hex().toUpperCase()}
-                    </p>
-                  </div>
-                ))}
-                
-                {/* Original */}
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-600">Original</p>
-                  <div
-                    className="h-16 rounded-lg border-2 border-blue-500"
-                    style={{ backgroundColor: colorHex }}
-                  />
-                  <p className="text-xs font-mono text-center text-gray-500 font-bold">
-                    {colorHex.toUpperCase()}
-                  </p>
+              {/* Applications */}
+              <div>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-4">Applications</h3>
+                <div className="flex flex-wrap gap-2">
+                  {applications.map((tag) => (
+                    <span key={tag} className="px-3 py-1.5 bg-gray-50 text-gray-700 text-sm font-bold rounded-lg border border-gray-100">
+                      {tag}
+                    </span>
+                  ))}
                 </div>
-                
-                {[0.6, 0.7, 0.8, 0.9].map((lightness, i) => (
-                  <div key={`dark-${i}`} className="space-y-2">
-                    <p className="text-sm font-medium text-gray-600">Dark {i + 1}</p>
-                    <div
-                      className="h-16 rounded-lg"
-                      style={{ backgroundColor: color.set('hsl.l', lightness).hex() }}
-                    />
-                    <p className="text-xs font-mono text-center text-gray-500">
-                      {color.set('hsl.l', lightness).hex().toUpperCase()}
-                    </p>
-                  </div>
-                ))}
+              </div>
+
+              {/* Color Codes */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">HEX</p>
+                  <p className="font-bold text-gray-900 uppercase">{hex.replace('#', '')}</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">RGB</p>
+                  <p className="font-bold text-gray-900">{rgb.join(', ')}</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">HSB</p>
+                  <p className="font-bold text-gray-900">{hsb.join(', ')}</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">CMYK</p>
+                  <p className="font-bold text-gray-900">{cmyk.join(', ')}</p>
+                </div>
+              </div>
+
+              {/* Shades, Tints, Tones */}
+              <div>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-4">Shades & Tints</h3>
+                <div className="flex flex-col gap-2">
+                    <div className="flex h-10 rounded-xl overflow-hidden">
+                        {shades.map((s, i) => (
+                            <div key={i} className="flex-1" style={{ backgroundColor: s }} title={s} />
+                        ))}
+                    </div>
+                    <div className="flex h-10 rounded-xl overflow-hidden">
+                        {tints.map((s, i) => (
+                            <div key={i} className="flex-1" style={{ backgroundColor: s }} title={s} />
+                        ))}
+                    </div>
+                </div>
               </div>
             </div>
           </div>

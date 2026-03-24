@@ -34,8 +34,6 @@ const ContrastGrade = ({ score, text, size }) => {
 function Contrast() {
   const [background, setBackground] = useState('#FFFFFF');
   const [text, setText] = useState('#264653');
-  const [showBackgroundSuggestions, setShowBackgroundSuggestions] = useState(false);
-  const [showTextSuggestions, setShowTextSuggestions] = useState(false);
 
   const contrastRatio = useMemo(() => {
     try {
@@ -50,93 +48,10 @@ function Contrast() {
     setText(background);
   };
 
-  const getAccessiblePair = () => {
-    // Generate a random background color
-    const bgColor = chroma.random().hex();
-    
-    // Find a text color that passes WCAG AA (4.5:1 for normal text)
-    let textColor;
-    let attempts = 0;
-    
-    do {
-        // Try both black and white first
-        const blackContrast = chroma.contrast('#000000', bgColor);
-        const whiteContrast = chroma.contrast('#FFFFFF', bgColor);
-        
-        if (blackContrast >= 4.5) {
-            textColor = '#000000';
-        } else if (whiteContrast >= 4.5) {
-            textColor = '#FFFFFF';
-        } else {
-            // If neither black nor white works, adjust the background color
-            // to be lighter or darker to meet contrast requirements
-            const luma = chroma(bgColor).get('lch.l');
-            if (luma > 50) {
-                // Make background darker
-                textColor = chroma(bgColor).set('lch.l', Math.max(0, luma - 40)).hex();
-            } else {
-                // Make background lighter
-                textColor = chroma(bgColor).set('lch.l', Math.min(100, luma + 40)).hex();
-            }
-        }
-        attempts++;
-    } while (chroma.contrast(textColor, bgColor) < 4.5 && attempts < 10);
-    
-    setBackground(bgColor);
-    setText(textColor);
-};
-
-const getContrastSuggestions = (baseColor, isBackground = true) => {
-    const suggestions = [];
-    
-    // Generate colors that pass contrast with the base color
-    for (let i = 0; i < 6; i++) {
-        let suggestion;
-        let attempts = 0;
-        
-        do {
-            if (isBackground) {
-                // Generate text colors that contrast with background
-                const luma = chroma(baseColor).get('lch.l');
-                if (luma > 50) {
-                    // Background is light, suggest dark text
-                    suggestion = chroma.random().set('lch.l', Math.random() * 30).hex();
-                } else {
-                    // Background is dark, suggest light text
-                    suggestion = chroma.random().set('lch.l', 70 + Math.random() * 30).hex();
-                }
-            } else {
-                // Generate background colors that contrast with text
-                const luma = chroma(baseColor).get('lch.l');
-                if (luma > 50) {
-                    // Text is light, suggest dark background
-                    suggestion = chroma.random().set('lch.l', Math.random() * 30).hex();
-                } else {
-                    // Text is dark, suggest light background
-                    suggestion = chroma.random().set('lch.l', 70 + Math.random() * 30).hex();
-                }
-            }
-            attempts++;
-        } while (chroma.contrast(suggestion, baseColor) < 4.5 && attempts < 10);
-        
-        if (chroma.contrast(suggestion, baseColor) >= 4.5) {
-            suggestions.push(suggestion);
-        }
-    }
-    
-    // Add guaranteed black and white options
-    const blackContrast = chroma.contrast('#000000', baseColor);
-    const whiteContrast = chroma.contrast('#FFFFFF', baseColor);
-    
-    if (blackContrast >= 4.5 && !suggestions.includes('#000000')) {
-        suggestions.unshift('#000000');
-    }
-    if (whiteContrast >= 4.5 && !suggestions.includes('#FFFFFF')) {
-        suggestions.unshift('#FFFFFF');
-    }
-    
-    return suggestions.slice(0, 6);
-};  
+  const getRandomPair = () => {
+    setBackground(chroma.random().hex());
+    setText(chroma.random().hex());
+  };
 
   return (
     <div className="min-h-screen bg-[#FDFDFD]">
@@ -198,79 +113,12 @@ const getContrastSuggestions = (baseColor, isBackground = true) => {
                 </div>
 
                 <button
-                    onClick={getAccessiblePair}
+                    onClick={getRandomPair}
                     className="h-16 flex items-center justify-center gap-3 text-lg font-black bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all"
                 >
                     <RefreshCw size={24} />
-                    Generate Accessible Pair
+                    Generate Random Pair
                 </button>
-
-                {/* Color Suggestions */}
-                <div className="border-t border-gray-100 pt-8">
-                    <h3 className="text-lg font-black text-gray-900 mb-6">Color Suggestions</h3>
-                    
-                    <div className="space-y-6">
-                        {/* Background Suggestions */}
-                        <div>
-                            <div className="flex items-center justify-between mb-3">
-                                <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Background Colors</span>
-                                <button
-                                    onClick={() => setShowBackgroundSuggestions(!showBackgroundSuggestions)}
-                                    className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
-                                >
-                                    {showBackgroundSuggestions ? 'Hide' : 'Show'}
-                                </button>
-                            </div>
-                            {showBackgroundSuggestions && (
-                                <div className="grid grid-cols-6 gap-2">
-                                    {getContrastSuggestions(text, false).map((color, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setBackground(color)}
-                                            className="h-12 rounded-xl border-2 border-gray-100 hover:border-blue-500 hover:scale-110 transition-all relative group"
-                                            style={{ backgroundColor: color }}
-                                            title={color}
-                                        >
-                                            <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 rounded-[10px] text-xs font-black text-gray-900">
-                                                {color.replace('#', '')}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Text Suggestions */}
-                        <div>
-                            <div className="flex items-center justify-between mb-3">
-                                <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Text Colors</span>
-                                <button
-                                    onClick={() => setShowTextSuggestions(!showTextSuggestions)}
-                                    className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
-                                >
-                                    {showTextSuggestions ? 'Hide' : 'Show'}
-                                </button>
-                            </div>
-                            {showTextSuggestions && (
-                                <div className="grid grid-cols-6 gap-2">
-                                    {getContrastSuggestions(background, true).map((color, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setText(color)}
-                                            className="h-12 rounded-xl border-2 border-gray-100 hover:border-blue-500 hover:scale-110 transition-all relative group"
-                                            style={{ backgroundColor: color }}
-                                            title={color}
-                                        >
-                                            <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 rounded-[10px] text-xs font-black text-gray-900">
-                                                {color.replace('#', '')}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
              </div>
           </section>
 

@@ -4,8 +4,6 @@ import { Provider } from 'react-redux';
 import { store } from './store/index';
 import './index.css'
 import App from './App';
-import AuthProvider from './Components/AuthProvider';
-import { NotificationProvider } from './utils/notifications';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import Generate from './Generate';
 import Favorites from './Favorites';
@@ -15,7 +13,6 @@ import Contrast from './Contrast';
 import Visualizer from './Visualizer';
 import ImagePicker from './ImagePicker';
 import GradientMaker from './GradientMaker';
-import ColorDetails from './ColorDetails';
 
 
 const router = createBrowserRouter([
@@ -55,10 +52,6 @@ const router = createBrowserRouter([
         path: "/Gradient",
         element: <GradientMaker />
       },
-      {
-        path: "/color/:hex",
-        element: <ColorDetails />
-      }
       
     ]
   }
@@ -67,11 +60,7 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
-      <AuthProvider>
-        <NotificationProvider>
-          <RouterProvider router={router} />
-        </NotificationProvider>
-      </AuthProvider>
+      <RouterProvider router={router} />
     </Provider>
   </React.StrictMode>,
 )
