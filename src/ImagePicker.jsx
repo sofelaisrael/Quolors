@@ -73,17 +73,17 @@ function ImagePicker() {
     setIsExtracting(false);
 
     // Update current image with extracted colors
-    if (currentImage && extracted.length > 0) {
-      setImages(prev => {
-        const updatedImages = [...prev];
-        updatedImages[currentImageIndex] = {
-          ...updatedImages[currentImageIndex],
-          colors: extracted,
-          selectedColors: extracted && extracted.length > 0 ? extracted.slice(0, 10) : []
-        };
-        return updatedImages;
-      });
-    }
+    setImages(prev => {
+      if (!prev || prev.length === 0) return prev;
+      const updatedImages = [...prev];
+      const currentIndex = Math.min(currentImageIndex, updatedImages.length - 1);
+      updatedImages[currentIndex] = {
+        ...updatedImages[currentIndex],
+        colors: extracted,
+        selectedColors: extracted && extracted.length > 0 ? extracted.slice(0, 10) : []
+      };
+      return updatedImages;
+    });
   }, []);
 
   const handleUpload = (e) => {
@@ -102,8 +102,11 @@ function ImagePicker() {
           };
           
           // Add to images array
-          setImages(prev => [...prev, newImage]);
-          setCurrentImageIndex(prev => prev.length);
+          setImages(prev => {
+            const newImages = [...(prev || []), newImage];
+            setCurrentImageIndex(newImages.length - 1); // Set to the new image's index
+            return newImages;
+          });
           
           // Extract colors for this image
           extractColors(img);
@@ -213,10 +216,10 @@ function ImagePicker() {
   };
 
   const extractNewColors = () => {
-    if (image) {
+    if (currentImage && currentImage.src) {
       const img = new Image();
       img.onload = () => extractColors(img);
-      img.src = image;
+      img.src = currentImage.src;
     }
   };
 
@@ -285,12 +288,24 @@ function ImagePicker() {
                     <button
                         onClick={() => {
                           // Remove current image
-                          setImages(prev => prev.filter((_, i) => i !== currentImageIndex));
-                          if (images.length > 1) {
-                            setCurrentImageIndex(0);
-                          } else {
-                            setCurrentImageIndex(-1);
-                          }
+                          setImages(prev => {
+                            const newImages = prev.filter((_, i) => i !== currentImageIndex);
+                            if (newImages.length === 0) {
+                              setCurrentImageIndex(-1);
+                              setColors([]);
+                              setSelectedColors([]);
+                            } else {
+                              const newIndex = Math.min(currentImageIndex, newImages.length - 1);
+                              setCurrentImageIndex(newIndex);
+                              // Switch to the new current image
+                              const newCurrentImage = newImages[newIndex];
+                              if (newCurrentImage) {
+                                setColors(newCurrentImage.colors || []);
+                                setSelectedColors(newCurrentImage.selectedColors || []);
+                              }
+                            }
+                            return newImages;
+                          });
                         }}
                         className="absolute top-6 right-6 p-4 bg-white/90 backdrop-blur text-gray-900 rounded-2xl hover:bg-white transition-all shadow-xl"
                     >

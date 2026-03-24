@@ -5,9 +5,12 @@ import { Menu, X, Github, Heart, User, LogOut } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { logout } from '../store/slices/authSlice'
 import { signOut } from '../utils/supabase'
+import ToolsDropdown from './ToolsDropdown'
+import AuthModal from './AuthModal'
 
 function Navbar() {
   const [open, setOpen] = useState(false)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const location = useLocation()
   const dispatch = useDispatch()
   const { isAuthenticated, user } = useSelector(state => state.auth)
@@ -26,12 +29,7 @@ function Navbar() {
   }
 
   const navLinks = [
-    { name: 'Generator', path: '/Generate' },
     { name: 'Explore', path: '/Explore' },
-    { name: 'Image Picker', path: '/Picker' },
-    { name: 'Contrast Checker', path: '/Contrast' },
-    { name: 'Visualizer', path: '/Visualizer' },
-    { name: 'Gradients', path: '/Gradient' },
   ]
 
   return (
@@ -45,12 +43,13 @@ function Navbar() {
         </Link>
 
         <div className="hidden md:flex items-center gap-6">
+          <ToolsDropdown />
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`text-sm font-semibold transition-colors ${
-                location.pathname === link.path ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'
+              className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                location.pathname === link.path ? 'text-blue-600' : 'text-gray-600'
               }`}
             >
               {link.name}
@@ -80,18 +79,18 @@ function Navbar() {
           </div>
         ) : (
           <div className="hidden md:flex items-center gap-3">
-            <Link 
-              to="/Login" 
+            <button 
+              onClick={() => setIsAuthModalOpen(true)}
               className="px-4 py-2 text-sm font-bold text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
             >
               Sign in
-            </Link>
-            <Link 
-              to="/Signup" 
+            </button>
+            <button 
+              onClick={() => setIsAuthModalOpen(true)}
               className="px-4 py-2 text-sm font-bold bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
               Sign up
-            </Link>
+            </button>
           </div>
         )}
         
@@ -144,18 +143,26 @@ function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link to="/Login" onClick={() => setOpen(false)} className="text-lg font-bold text-gray-900 px-4 py-2 hover:bg-gray-50 rounded-xl">
+                  <button 
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="text-lg font-bold text-gray-900 px-4 py-2 hover:bg-gray-50 rounded-xl"
+                  >
                     Sign in
-                  </Link>
-                  <Link to="/Signup" onClick={() => setOpen(false)} className="text-lg font-bold bg-gray-900 text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors">
+                  </button>
+                  <button 
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="text-lg font-bold bg-gray-900 text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors"
+                  >
                     Sign up
-                  </Link>
+                  </button>
                 </>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </nav>
   )
 }

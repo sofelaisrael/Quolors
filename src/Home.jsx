@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Play, Search, Image as ImageIcon, CheckCircle, Heart } from 'lucide-react';
+import Navbar from './Components/Navbar';
 
 const FeatureCard = ({ icon: Icon, title, description, color }) => (
   <motion.div
@@ -19,24 +20,7 @@ const FeatureCard = ({ icon: Icon, title, description, color }) => (
 function Home() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Header/Navbar */}
-      <nav className="h-20 flex items-center justify-between px-10">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-            <div className="w-5 h-5 bg-white rounded-full" />
-          </div>
-          <span className="text-2xl font-black tracking-tighter text-gray-900">Quolors</span>
-        </div>
-        <div className="hidden md:flex items-center gap-10">
-          <Link to="/Explore" className="text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">Explore</Link>
-          <Link to="/Contrast" className="text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">Contrast</Link>
-          <Link to="/Visualizer" className="text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">Visualizer</Link>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="text-sm font-bold text-gray-900 px-6 py-2.5 hover:bg-gray-100 rounded-xl transition-colors">Sign in</button>
-          <Link to="/Generate" className="text-sm font-bold bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">Sign up</Link>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-10 pt-16 pb-24 text-center">

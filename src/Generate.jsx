@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   generatePalette,
   undo,
@@ -31,11 +31,15 @@ import {
 import { motion, Reorder, AnimatePresence, useDragControls } from 'framer-motion';
 import chroma from 'chroma-js';
 import { toggleFavorite } from './store/slices/favoritesSlice';
+import { useNotifications } from './utils/notifications';
 import Navbar from './Components/Navbar';
 import ExportModal from './Components/ExportModal';
+import ColorDetailsModal from './Components/ColorDetailsModal';
+import AuthModal from './Components/AuthModal';
 
-const ColorBar = ({ color, index, total }) => {
+const ColorBar = ({ color, index, total, theoryRule, onColorClick }) => {
   const dispatch = useDispatch();
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const [showShades, setShowShades] = useState(false);
   const contrastColor = chroma.contrast(color.hex, 'black') > 4.5 ? 'black' : 'white';
   const dragControls = useDragControls();
@@ -111,8 +115,11 @@ const ColorBar = ({ color, index, total }) => {
       value={color}
       dragListener={false}
       dragControls={dragControls}
-      className="flex-1 flex flex-col items-center justify-center group h-full relative overflow-hidden transition-colors duration-200"
-      style={{ backgroundColor: color.hex, color: contrastColor }}
+      className="flex-1 flex flex-col items-center justify-center group h-full relative transition-colors duration-200"
+      style={{ 
+        backgroundColor: color.hex, 
+        color: contrastColor,
+      }}
     >
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 pointer-events-none" />
 
@@ -138,17 +145,14 @@ const ColorBar = ({ color, index, total }) => {
       <div className="flex flex-col items-center gap-2 z-10 select-none">
         <button
           onClick={() => dispatch(toggleLock(color.id))}
-          className={`p-4 hover:bg-black/10 rounded-2xl transition-all mb-8 ${color.locked ? 'bg-black/5' : ''}`}
+          className={`${getButtonPadding()} hover:bg-black/10 rounded-full transition-all ${color.locked ? 'bg-black/5' : ''} ${theoryRule !== 'Random' ? 'cursor-not-allowed opacity-50' : ''}`}
+          disabled={theoryRule !== 'Random'}
+          title={theoryRule !== 'Random' ? 'Locking disabled in theory modes' : (color.locked ? 'Unlock color' : 'Lock color')}
         >
-          {color.locked ? <Lock size={getIconSize()} fill="currentColor" /> : <Unlock size={getIconSize()} />}
+          {color.locked ? <Lock size={getButtonSize()} fill="currentColor" /> : <Unlock size={getButtonSize()} />}
         </button>
 
-        <h2
-          className={`${getTextSize()} font-black tracking-widest cursor-pointer hover:scale-105 transition-transform uppercase drop-shadow-sm mb-1`}
-          onClick={copyToClipboard}
-        >
-          {color.hex.replace('#', '')}
-        </h2>
+        <h2 onClick={() => onColorClick && onColorClick(color.hex)} className="font-bold cursor-pointer hover:text-blue-600 transition-colors">{color.hex.replace('#', '')}</h2>
 
         <p className={`${getNameSize()} h-5 font-black opacity-40 uppercase tracking-[0.2em] max-w-[120px] text-center leading-tight`}>
           {color.name || 'Loading...'}
@@ -176,12 +180,18 @@ const ColorBar = ({ color, index, total }) => {
       {/* Shades Panel */}
       <AnimatePresence>
         {showShades && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="absolute bottom-32 bg-white rounded-[24px] shadow-2xl p-2.5 flex flex-col gap-1.5 z-50 border border-gray-100"
-          >
+          <>
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setShowShades(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="absolute bottom-32 bg-white rounded-[24px] shadow-2xl p-2.5 flex flex-col gap-1.5 z-50 border border-gray-100"
+              onClick={(e) => e.stopPropagation()}
+            >
             {shades.map((s, i) => (
               <div
                 key={i}
@@ -194,18 +204,75 @@ const ColorBar = ({ color, index, total }) => {
                 title={s}
               />
             ))}
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
-      {/* Add Column Button */}
-      <button
-        onClick={() => dispatch(addColumn(index + 1))}
-        className={`absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white text-black rounded-full shadow-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 transition-all z-20 border border-gray-50 text-gray-400 hover:text-black ${total >= 9 ? '-right-3 w-7 h-7' : ''}`}
-      >
-        <Plus size={total >= 9 ? 16 : 20} strokeWidth={3} />
-      </button>
+      {/* Add Column Button - Only show if not last column */}
+      {index < total - 1 && (
+        <button
+          onClick={() => dispatch(addColumn(index + 1))}
+          className={`absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white text-black rounded-full shadow-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 transition-all z-20 border border-gray-50 text-gray-400 hover:text-black cursor-pointer ${total >= 9 ? '-right-3 w-7 h-7' : ''}`}
+        >
+          <Plus size={total >= 9 ? 16 : 20} strokeWidth={3} />
+        </button>
+      )}
     </Reorder.Item>
+  );
+};
+
+// Custom Mode Dropdown Component
+const ModeDropdown = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const modes = ['Random', 'Monochromatic', 'Analogous', 'Complementary'];
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="h-9 px-8 text-xs font-black bg-white border-2 border-gray-100 rounded-[14px] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none cursor-pointer transition-all shadow-sm flex items-center gap-2 hover:border-blue-200"
+      >
+        <span>{value}</span>
+        <ChevronDown 
+          size={14} 
+          className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+        />
+      </button>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setIsOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border-2 border-gray-100 shadow-xl z-50 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {modes.map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => {
+                    onChange(mode);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-xs font-black transition-all hover:bg-blue-50 hover:text-blue-600 ${
+                    value === mode ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
@@ -213,10 +280,15 @@ function Generate() {
   const dispatch = useDispatch();
   const colors = useSelector((state) => state.palette.colors);
   const theoryRule = useSelector((state) => state.palette.theoryRule);
-  const [isExportOpen, setIsExportOpen] = useState(false);
+  const history = useSelector((state) => state.palette.history);
+  const pointer = useSelector((state) => state.palette.pointer);
+  const { isAuthenticated } = useSelector((state) => state.auth);
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [fromVisualizer, setFromVisualizer] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [colorDetailsModal, setColorDetailsModal] = useState({ isOpen: false, colorHex: null });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { addNotification } = useNotifications();
 
   // Load palette from URL if specified and check if coming from visualizer
   useEffect(() => {
@@ -294,15 +366,11 @@ function Generate() {
 
           <div className="flex items-center gap-3 bg-gray-50/50 p-1.5 rounded-2xl border border-gray-100/50">
             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-3">Mode</span>
-            <select
-              value={theoryRule}
-              onChange={(e) => dispatch(setTheoryRule(e.target.value))}
-              className="h-9 px-4 text-xs font-black bg-white border-2 border-gray-100 rounded-[14px] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none cursor-pointer transition-all shadow-sm"
-            >
-              {['Random', 'Monochromatic', 'Analogous', 'Complementary', 'Triadic'].map(rule => (
-                <option key={rule} value={rule}>{rule}</option>
-              ))}
-            </select>
+            <ModeDropdown 
+              key={theoryRule}
+              value={theoryRule} 
+              onChange={(mode) => dispatch(setTheoryRule(mode))} 
+            />
           </div>
         </div>
 
@@ -310,14 +378,24 @@ function Generate() {
           <div className="flex items-center gap-1 bg-gray-50/50 p-1.5 rounded-2xl border border-gray-100/50 mr-4">
             <button
               onClick={() => dispatch(undo())}
-              className="p-2.5 hover:bg-white rounded-[12px] transition-all text-gray-400 hover:text-black hover:shadow-sm"
+              disabled={pointer <= 0}
+              className={`p-2.5 rounded-[12px] transition-all font-black text-sm ${
+                pointer <= 0 
+                  ? 'text-gray-200 cursor-not-allowed' 
+                  : 'text-black bg-white shadow-sm cursor-pointer'
+              }`}
               title="Undo (Ctrl+Z)"
             >
               <Undo2 size={20} strokeWidth={2.5} />
             </button>
             <button
               onClick={() => dispatch(redo())}
-              className="p-2.5 hover:bg-white rounded-[12px] transition-all text-gray-400 hover:text-black hover:shadow-sm"
+              disabled={pointer >= history.length - 1}
+              className={`p-2.5 rounded-[12px] transition-all font-black text-sm ${
+                pointer >= history.length - 1 
+                  ? 'text-gray-200 cursor-not-allowed' 
+                  : 'text-black bg-white shadow-sm cursor-pointer'
+              }`}
               title="Redo (Ctrl+Y)"
             >
               <Redo2 size={20} strokeWidth={2.5} />
@@ -328,18 +406,29 @@ function Generate() {
 
           <button
             onClick={() => setIsExportOpen(true)}
-            className="flex items-center gap-2.5 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-100 rounded-2xl transition-all font-black text-sm active:scale-95 shadow-sm"
+            className="flex items-center gap-2.5 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-100 rounded-2xl transition-all font-black text-sm active:scale-95"
           >
             <Layers size={18} strokeWidth={2.5} />
             <span>Export</span>
           </button>
 
           <button
-            onClick={() => dispatch(toggleFavorite(colors))}
-            className="flex items-center gap-2.5 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl transition-all font-black text-sm shadow-xl shadow-blue-100 active:scale-95 scale-105 ml-2"
+            onClick={() => {
+              if (!isAuthenticated) {
+                addNotification('Please login to save palettes', 'warning');
+                setIsAuthModalOpen(true);
+              } else {
+                dispatch(toggleFavorite(colors));
+              }
+            }}
+            className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl transition-all font-black text-sm active:scale-95 scale-105 ml-2 ${
+              !isAuthenticated 
+                ? 'bg-gray-400 text-white cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
+            }`}
           >
             <Heart size={18} fill="currentColor" strokeWidth={2.5} />
-            <span>Save</span>
+            <span>{!isAuthenticated ? 'Login to Save' : 'Save'}</span>
           </button>
         </div>
       </div>
@@ -357,11 +446,21 @@ function Generate() {
             color={color}
             index={index}
             total={colors.length}
+            theoryRule={theoryRule}
           />
         ))}
       </Reorder.Group>
 
       <ExportModal isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} />
+      <ColorDetailsModal 
+        isOpen={colorDetailsModal.isOpen} 
+        onClose={() => setColorDetailsModal({ isOpen: false, colorHex: null })}
+        colorHex={colorDetailsModal.colorHex}
+      />
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </div>
   );
 }

@@ -15,8 +15,7 @@ import Contrast from './Contrast';
 import Visualizer from './Visualizer';
 import ImagePicker from './ImagePicker';
 import GradientMaker from './GradientMaker';
-import Login from './Login';
-import Signup from './Signup';
+import ColorDetails from './ColorDetails';
 
 
 const router = createBrowserRouter([
@@ -57,13 +56,9 @@ const router = createBrowserRouter([
         element: <GradientMaker />
       },
       {
-        path: "/Login",
-        element: <Login />
-      },
-      {
-        path: "/Signup",
-        element: <Signup />
-      },
+        path: "/color/:hex",
+        element: <ColorDetails />
+      }
       
     ]
   }

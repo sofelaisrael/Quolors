@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Trash2,
   ExternalLink,
@@ -20,6 +20,7 @@ import { removeFavorite, createCollection, deleteCollection, movePaletteToCollec
 import { setPalette } from './store/slices/paletteSlice';
 import Navbar from './Components/Navbar';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNotifications } from './utils/notifications';
 
 const CollectionCard = ({ collection, count, isActive, onClick, onDelete }) => (
   <button
@@ -108,9 +109,14 @@ const PaletteCard = ({ palette, collections }) => {
                         <div className="max-h-48 overflow-y-auto">
                             <button
                                 onClick={() => {
+                                    if (!isAuthenticated) {
+                                      addNotification('Please login to manage collections', 'warning');
+                                      navigate('/Login');
+                                      return;
+                                    }
                                     dispatch(movePaletteToCollection({ paletteId: palette.id, collectionId: null }));
                                     setShowMove(false);
-                                }}
+                                  }}
                                 className="w-full text-left p-3 hover:bg-gray-50 rounded-xl text-xs font-bold transition-all"
                             >
                                 (Unsorted)
@@ -141,7 +147,14 @@ const PaletteCard = ({ palette, collections }) => {
             <ExternalLink size={18} />
           </Link>
           <button
-            onClick={() => dispatch(removeFavorite(palette.id))}
+            onClick={() => {
+              if (!isAuthenticated) {
+                addNotification('Please login to manage favorites', 'warning');
+                navigate('/Login');
+              } else {
+                dispatch(removeFavorite(palette.id));
+              }
+            }}
             className="p-2.5 hover:bg-rose-50 text-rose-500 rounded-xl transition-colors"
             title="Remove"
           >
@@ -156,14 +169,22 @@ const PaletteCard = ({ palette, collections }) => {
 function Favorites() {
   const dispatch = useDispatch();
   const { palettes, collections } = useSelector(state => state.favorites);
+  const { isAuthenticated } = useSelector(state => state.auth);
   const [activeCollectionId, setActiveCollectionId] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState('');
+  const navigate = useNavigate();
+  const { addNotification } = useNotifications();
 
   const filteredPalettes = palettes.filter(p => p.collectionId === activeCollectionId);
 
   const handleCreate = (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      addNotification('Please login to create collections', 'warning');
+      navigate('/Login');
+      return;
+    }
     if (newName.trim()) {
         dispatch(createCollection(newName.trim()));
         setNewName('');
@@ -195,9 +216,14 @@ function Favorites() {
                         isActive={activeCollectionId === c.id}
                         onClick={() => setActiveCollectionId(c.id)}
                         onDelete={() => {
+                            if (!isAuthenticated) {
+                              addNotification('Please login to manage collections', 'warning');
+                              navigate('/Login');
+                              return;
+                            }
                             dispatch(deleteCollection(c.id));
                             if (activeCollectionId === c.id) setActiveCollectionId(null);
-                        }}
+                          }}
                     />
                 ))}
             </div>

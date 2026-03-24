@@ -105,7 +105,7 @@ function Explore() {
   }, [search]);
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD]">
+    <div className="min-h-screen bg-white">
       <Navbar />
 
       <header className="max-w-7xl mx-auto px-8 pt-20 pb-16 text-center">

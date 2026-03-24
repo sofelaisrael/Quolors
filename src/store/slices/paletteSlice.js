@@ -88,20 +88,6 @@ const paletteSlice = createSlice({
             const comp = chroma(baseColor).set('hsl.h', (chroma(baseColor).get('hsl.h') + 180) % 360).hex();
             palette = chroma.scale([baseColor, comp]).mode('lch').colors(state.colors.length);
             break;
-          case 'Triadic':
-            // Triadic should only generate 3 distinct colors
-            const baseHue = chroma(baseColor).get('hsl.h');
-            const triadicColors = [
-              chroma(baseColor).hex(), // Original
-              chroma(baseColor).set('hsl.h', (baseHue + 120) % 360).hex(), // +120°
-              chroma(baseColor).set('hsl.h', (baseHue + 240) % 360).hex()  // +240°
-            ];
-            
-            // Create palette by cycling through the 3 triadic colors
-            palette = Array.from({ length: state.colors.length }, (_, i) => 
-              triadicColors[i % 3]
-            );
-            break;
           default:
             palette = state.colors.map(() => chroma.random().hex());
         }
