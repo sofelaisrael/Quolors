@@ -12,7 +12,7 @@ const EditPaletteModal = ({ isOpen, onClose, colors, onSave }) => {
     colors.map((color, index) => ({
       ...color,
       id: color.id || `color-${index}`,
-      name: color.name || `Color ${index + 1}`
+      name: color.name || ''
     }))
   );
   const { copyToClipboard, showNotification, notificationMessage } = useCopyToClipboard();
@@ -88,7 +88,7 @@ const EditPaletteModal = ({ isOpen, onClose, colors, onSave }) => {
                         </div>
 
                         <div
-                          className="w-10 h-10 rounded-lg shadow-sm border-2 border-white flex-shrink-0"
+                          className="w-12 h-12 rounded-xl shadow-sm border-2 border-white flex-shrink-0"
                           style={{ backgroundColor: color.hex }}
                         />
 
@@ -97,16 +97,15 @@ const EditPaletteModal = ({ isOpen, onClose, colors, onSave }) => {
                             type="text"
                             value={color.hex}
                             onChange={(e) => handleColorChange(index, e.target.value)}
-                            className="w-full px-2 py-1 text-sm font-mono font-bold bg-white border border-gray-200 rounded focus:border-purple-500 focus:ring-1 focus:ring-purple-100 outline-none"
+                            className="w-full px-3 py-2 text-sm font-mono font-bold bg-white border border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
                             placeholder="#000000"
                           />
-                          <div className="text-xs text-gray-500 mt-1">
-                            {color.name}
-                          </div>
                         </div>
 
-                        <div className="text-xs font-medium text-gray-400">
-                          #{index + 1}
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
+                            {index + 1}
+                          </div>
                         </div>
                       </div>
                     </Reorder.Item>

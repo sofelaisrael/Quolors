@@ -19,6 +19,7 @@ import {
 import { removeFavorite, createCollection, deleteCollection, movePaletteToCollection } from './store/slices/favoritesSlice';
 import { setPalette } from './store/slices/paletteSlice';
 import Navbar from './Components/Navbar';
+import Toast from './Components/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CollectionCard = ({ collection, count, isActive, onClick, onDelete }) => (
@@ -271,6 +272,8 @@ function Favorites() {
             )}
         </section>
       </main>
+      
+      <Toast />
     </div>
   );
 }

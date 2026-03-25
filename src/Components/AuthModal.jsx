@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Github, Chrome, Mail, Apple } from 'lucide-react';
+import { X, Github, Chrome, Mail } from 'lucide-react';
 import { closeAuthModal, login } from '../store/slices/uiSlice';
 import { addNotification } from '../store/slices/notificationSlice';
 import { supabase } from '../services/supabase';
@@ -97,14 +97,6 @@ const AuthModal = () => {
                   >
                     <Chrome size={24} className="text-gray-900" />
                     <span>Continue with Google</span>
-                  </button>
-
-                  <button 
-                    onClick={() => handleSocialLogin('Apple')}
-                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-black text-white rounded-2xl hover:bg-gray-900 transition-all font-semibold text-lg group"
-                  >
-                    <Apple size={24} fill="currentColor" />
-                    <span>Continue with Apple</span>
                   </button>
 
                   <button 

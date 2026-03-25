@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, ChevronDown, LayoutGrid, Palette, Image, Ruler, Monitor, Layers, LogOut, User } from 'lucide-react'
+import { Menu, X, ChevronDown, LayoutGrid, Palette, Image, Ruler, Monitor, Layers, LogOut, User, Heart } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDispatch, useSelector } from 'react-redux'
 import { openAuthModal, logout } from '../store/slices/uiSlice'
@@ -116,8 +116,17 @@ function Navbar() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-full right-0 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 mt-2 z-50"
+                  className="absolute top-full right-0 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 mt-2 z-50"
                 >
+                  <Link
+                    to="/Favourite"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <Heart size={16} />
+                    Saved Palettes
+                  </Link>
+                  <hr className="my-2 border-gray-100" />
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -130,20 +139,12 @@ function Navbar() {
             </AnimatePresence>
           </div>
         ) : (
-          <>
-            <button
-                onClick={() => dispatch(openAuthModal())}
-                className="hidden md:block text-sm font-bold text-gray-600 hover:text-gray-900 px-3 transition-colors"
-            >
-                Sign in
-            </button>
-            <button
-                onClick={() => dispatch(openAuthModal())}
-                className="px-4 py-2 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-50 active:scale-95"
-            >
-                Sign up
-            </button>
-          </>
+          <button
+              onClick={() => dispatch(openAuthModal())}
+              className="px-4 py-2 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-50 active:scale-95"
+          >
+              Get Started
+          </button>
         )}
         <button
             className="md:hidden p-2 text-gray-600"
@@ -176,19 +177,30 @@ function Navbar() {
                 </Link>
               ))}
               <hr className="my-4 border-gray-100" />
-              {!isAuthenticated ? (
-                <button
-                  onClick={() => { dispatch(openAuthModal()); setIsMobileMenuOpen(false); }}
-                  className="text-lg font-bold text-blue-600 px-4 py-3 text-left"
-                >
-                  Sign in
-                </button>
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to="/Favourite"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-4 text-lg font-bold text-gray-900 px-4 py-3 hover:bg-gray-50 rounded-xl"
+                  >
+                    <Heart size={20} className="text-red-500" />
+                    Saved Palettes
+                  </Link>
+                  <button
+                    onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                    className="flex items-center gap-4 text-lg font-bold text-red-600 px-4 py-3 hover:bg-gray-50 rounded-xl"
+                  >
+                    <LogOut size={20} />
+                    Sign out
+                  </button>
+                </>
               ) : (
                 <button
-                  onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                  className="text-lg font-bold text-red-600 px-4 py-3 text-left"
+                  onClick={() => { dispatch(openAuthModal()); setIsMobileMenuOpen(false); }}
+                  className="w-full px-4 py-3 text-lg font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-50 active:scale-95"
                 >
-                  Sign out
+                  Get Started
                 </button>
               )}
               <button className="text-lg font-bold text-pink-500 px-4 py-3 text-left">

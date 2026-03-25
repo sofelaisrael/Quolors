@@ -5,8 +5,9 @@ import { Search, Heart, ExternalLink, Filter, TrendingUp, Clock, Star } from 'lu
 import { setPalette } from './store/slices/paletteSlice';
 import { toggleFavorite } from './store/slices/favoritesSlice';
 import { openAuthModal } from './store/slices/uiSlice';
-import { addNotification } from './store/slices/notificationSlice';
 import Navbar from './Components/Navbar';
+import Toast from './Components/Toast';
+import { useCopyToClipboard } from './hooks/useCopyToClipboard';
 import { motion, AnimatePresence } from 'framer-motion';
 import chroma from 'chroma-js';
 
@@ -33,6 +34,7 @@ const ExploreCard = ({ colors }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const isAuthenticated = useSelector((state) => state.ui.isAuthenticated);
+  const { copyToClipboard } = useCopyToClipboard();
 
   const paletteObj = colors.map(hex => ({
     hex,
@@ -47,19 +49,13 @@ const ExploreCard = ({ colors }) => {
 
   const handleFavorite = () => {
     if (!isAuthenticated) {
-      dispatch(addNotification({
-        message: 'Please sign in to save palettes!',
-        type: 'error'
-      }));
+      copyToClipboard('', 'Please sign in to save palettes!');
       dispatch(openAuthModal());
       return;
     }
     
     dispatch(toggleFavorite(paletteObj));
-    dispatch(addNotification({
-      message: 'Palette added to favorites!',
-      type: 'favorite'
-    }));
+    copyToClipboard('', 'Palette added to favorites!');
   };
 
   return (
@@ -176,6 +172,8 @@ function Explore() {
           </div>
         )}
       </main>
+      
+      <Toast />
     </div>
   );
 }

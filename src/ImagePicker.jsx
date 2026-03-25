@@ -5,6 +5,7 @@ import { Upload, Image as ImageIcon, CheckCircle, ExternalLink, RefreshCw, Heart
 import { setPalette } from './store/slices/paletteSlice';
 import { toggleFavorite } from './store/slices/favoritesSlice';
 import { addNotification } from './store/slices/notificationSlice';
+import { openAuthModal } from './store/slices/uiSlice';
 import Navbar from './Components/Navbar';
 import Toast from './Components/Toast';
 import { useCopyToClipboard } from './hooks/useCopyToClipboard';
@@ -23,6 +24,7 @@ function ImagePicker() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { favorites } = useSelector(state => state.favorites);
+  const { isAuthenticated } = useSelector(state => state.ui);
   const { copyToClipboard, showNotification, notificationMessage } = useCopyToClipboard();
 
   const currentImage = images[currentImageIndex];
@@ -183,17 +185,22 @@ function ImagePicker() {
   const clearAllColors = () => setSelectedColors([]);
 
   const toggleFavoriteColor = (hex) => {
+    if (!isAuthenticated) {
+      dispatch(openAuthModal());
+      return;
+    }
+
     const existingFavorite = favorites?.palettes?.find(p => 
       p && p.colors && Array.isArray(p.colors) && p.colors.length === 1 && p.colors[0].hex === hex
     );
     
     if (existingFavorite) {
       dispatch(toggleFavorite(existingFavorite.colors));
-      dispatch(addNotification({ message: 'Removed from favorites', type: 'info' }));
+      copyToClipboard(hex, 'Removed from favorites');
     } else {
       const colorObj = { hex, id: Math.random().toString(36).substr(2, 9) };
       dispatch(toggleFavorite([colorObj]));
-      dispatch(addNotification({ message: 'Added to favorites', type: 'success' }));
+      copyToClipboard(hex, 'Added to favorites');
     }
   };
 

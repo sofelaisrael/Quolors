@@ -142,19 +142,13 @@ const ColorBar = ({ color, index, total, isDragging, onDragStart, onDragEnd, cop
 
   const handleFavorite = () => {
     if (!isAuthenticated) {
-      dispatch(addNotification({
-        message: 'Please sign in to save favorites!',
-        type: 'error'
-      }));
+      copyToClipboard('', 'Please sign in to save favorites!');
       dispatch(openAuthModal());
       return;
     }
     
     dispatch(toggleFavorite([color]));
-    dispatch(addNotification({
-      message: `${colorName} added to favorites!`,
-      type: 'favorite'
-    }));
+    copyToClipboard(color.hex, `${colorName} added to favorites!`);
   };
 
   const toggleShades = () => {
@@ -335,19 +329,13 @@ function Generate() {
 
   const handleSavePalette = () => {
     if (!isAuthenticated) {
-      dispatch(addNotification({
-        message: 'Please sign in to save palettes!',
-        type: 'error'
-      }));
+      copyToClipboard('', 'Please sign in to save palettes!');
       dispatch(openAuthModal());
       return;
     }
     
     dispatch(toggleFavorite(colors));
-    dispatch(addNotification({
-      message: 'Palette saved to favorites!',
-      type: 'save'
-    }));
+    copyToClipboard('', 'Palette saved to favorites!');
   };
 
   const handleViewColorDetails = () => {
