@@ -18,11 +18,12 @@ import {
   Plus,
   X,
   GripVertical,
+  Copy,
   Heart,
   Undo2,
   Redo2,
   Maximize2,
-  Grid,
+  Layers,
   ChevronDown,
   Eye,
   Share2,
@@ -33,158 +34,438 @@ import {
 import { motion, Reorder, AnimatePresence, useDragControls } from 'framer-motion';
 import chroma from 'chroma-js';
 import { toggleFavorite } from './store/slices/favoritesSlice';
-import { openColorDetailsModal } from './store/slices/uiSlice';
+import { openColorDetailsModal, openAuthModal } from './store/slices/uiSlice';
+import { addNotification } from './store/slices/notificationSlice';
+import { getColorName } from './services/colorApi';
 import Navbar from './Components/Navbar';
 import ExportModal from './Components/ExportModal';
+import Notifications from './Components/Notifications';
 
-const ColorBar = ({ color, index, total }) => {
+const ModeDropdown = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const modes = ['Random', 'Monochromatic', 'Analogous', 'Complementary', 'Split-Complementary'];
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="h-9 px-8 text-xs font-black bg-white border-2 border-gray-100 rounded-[14px] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none cursor-pointer transition-all shadow-sm flex items-center gap-2 hover:border-blue-200"
+      >
+        <span>{value}</span>
+        <ChevronDown 
+          size={14} 
+          className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+        />
+      </button>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setIsOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border-2 border-gray-100 shadow-xl z-50 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {modes.map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => {
+                    onChange(mode);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-xs font-black transition-all hover:bg-blue-50 hover:text-blue-600 ${
+                    value === mode ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const ColorBar = ({ color, index, total, isDragging }) => {
   const dispatch = useDispatch();
   const contrastColor = chroma.contrast(color.hex, 'black') > 4.5 ? 'black' : 'white';
   const dragControls = useDragControls();
+  const isAuthenticated = useSelector((state) => state.ui.isAuthenticated);
+  const [colorName, setColorName] = useState('Loading...');
+  const [showShades, setShowShades] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(color.hex.toUpperCase());
+  // Load color name on component mount and when color changes
+  useEffect(() => {
+    const loadColorName = async () => {
+      try {
+        const name = await getColorName(color.hex);
+        setColorName(name);
+      } catch (error) {
+        setColorName(chroma(color.hex).name());
+      }
+    };
+    loadColorName();
+  }, [color.hex]);
+
+  // Generate shades for the color
+  const generateShades = (baseColor) => {
+    const color = chroma(baseColor);
+    const hsl = color.hsl();
+    
+    // Create 7 controlled shades using HSL lightness
+    return [
+      chroma.hsl(hsl[0], hsl[1], Math.min(0.95, hsl[2] + 0.3)).hex(), // Much lighter
+      chroma.hsl(hsl[0], hsl[1], Math.min(0.9, hsl[2] + 0.2)).hex(),  // Lighter
+      chroma.hsl(hsl[0], hsl[1], Math.min(0.85, hsl[2] + 0.1)).hex(), // Light
+      color.hex(),                                                        // Original
+      chroma.hsl(hsl[0], hsl[1], Math.max(0.15, hsl[2] - 0.1)).hex(), // Dark
+      chroma.hsl(hsl[0], hsl[1], Math.max(0.1, hsl[2] - 0.2)).hex(),  // Darker
+      chroma.hsl(hsl[0], hsl[1], Math.max(0.05, hsl[2] - 0.3)).hex()  // Much darker
+    ];
+  };
+
+  const shades = generateShades(color.hex);
+
+  const copyToClipboard = (text = color.hex) => {
+    navigator.clipboard.writeText(text.toUpperCase());
+    dispatch(addNotification({
+      message: `Copied`,
+      type: 'copy'
+    }));
+  };
+
+  const handleFavorite = () => {
+    if (!isAuthenticated) {
+      dispatch(addNotification({
+        message: 'Please sign in to save favorites!',
+        type: 'error'
+      }));
+      dispatch(openAuthModal());
+      return;
+    }
+    
+    dispatch(toggleFavorite([color]));
+    dispatch(addNotification({
+      message: `${colorName} added to favorites!`,
+      type: 'favorite'
+    }));
+  };
+
+  const toggleShades = () => {
+    setShowShades(!showShades);
   };
 
   return (
-    <Reorder.Item
-      value={color}
-      dragListener={false}
-      dragControls={dragControls}
-      className="flex-1 flex flex-col items-center justify-end pb-24 group h-full relative overflow-hidden transition-colors duration-300"
-      style={{ backgroundColor: color.hex, color: contrastColor }}
-    >
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 pointer-events-none" />
-
-      {/* Interaction Icons (Visible on Hover) */}
-      <div className="flex flex-col gap-6 opacity-0 group-hover:opacity-100 transition-all duration-300 mb-12">
-        <button
-          onClick={() => dispatch(removeColumn(color.id))}
-          className="p-2 hover:bg-black/10 rounded-full transition-colors"
-          title="Remove color"
-        >
-          <X size={20} />
-        </button>
-        <button
-          onClick={() => dispatch(openColorDetailsModal(color))}
-          className="p-2 hover:bg-black/10 rounded-full transition-colors"
-          title="View shades"
-        >
-          <Grid size={20} />
-        </button>
-        <div
-          onPointerDown={(e) => dragControls.start(e)}
-          className="cursor-grab active:cursor-grabbing p-2 hover:bg-black/10 rounded-full transition-colors"
-          title="Drag to reorder"
-        >
-          <GripVertical size={20} />
-        </div>
-        <button
-          onClick={() => dispatch(toggleFavorite([color]))}
-          className="p-2 hover:bg-black/10 rounded-full transition-colors"
-          title="Save color"
-        >
-          <Bookmark size={20} />
-        </button>
-      </div>
-
-      {/* Main Color Info (Always at bottom) */}
-      <div className="flex flex-col items-center gap-2 z-10 px-2 w-full">
-         <button
-          onClick={() => dispatch(toggleLock(color.id))}
-          className="p-3 hover:bg-black/10 rounded-xl transition-all mb-4"
-        >
-          {color.locked ? <Lock size={28} fill="currentColor" /> : <Unlock size={28} />}
-        </button>
-
-        <h2
-          className="text-2xl font-bold tracking-wider cursor-pointer hover:scale-105 transition-transform uppercase mb-1"
-          onClick={copyToClipboard}
-        >
-          {color.hex.replace('#', '')}
-        </h2>
-
-        <p className="text-xs font-bold opacity-60 uppercase tracking-widest text-center truncate w-full">
-          {chroma(color.hex).name()}
-        </p>
-      </div>
-
-      {/* Add Column Button */}
-      <button
-        onClick={() => dispatch(addColumn(index + 1))}
-        className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white text-black rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 transition-all z-20 border border-gray-100"
+    <>
+      <Reorder.Item
+        value={color}
+        dragListener={false}
+        dragControls={dragControls}
+        className="flex-1 flex flex-col items-center justify-end pb-16 group h-full relative overflow-hidde transition-colors duration-300"
+        style={{ backgroundColor: color.hex, color: contrastColor }}
       >
-        <Plus size={16} />
-      </button>
-    </Reorder.Item>
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 pointer-events-none" />
+
+        {/* Shades Panel */}
+        <AnimatePresence>
+          {showShades && (
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowShades(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="absolute bottom-32 bg-white rounded-[24px] shadow-2xl p-2.5 flex flex-col gap-1.5 z-50 border border-gray-100"
+                onClick={(e) => e.stopPropagation()}
+              >
+              {shades.map((s, i) => (
+                <div
+                  key={i}
+                  onClick={() => {
+                    dispatch(updateColor({ id: color.id, hex: s }));
+                    setShowShades(false);
+                  }}
+                  className="w-14 h-11 rounded-xl cursor-pointer hover:scale-110 transition-transform shadow-sm"
+                  style={{ backgroundColor: s }}
+                  title={s}
+                />
+              ))}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Interaction Icons (Visible on Hover) */}
+        <div className="flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 mb-8">
+          <button
+            onClick={() => dispatch(removeColumn(color.id))}
+            disabled={isDragging}
+            className="p-1.5 hover:bg-black/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Remove color"
+          >
+            <X size={16} />
+          </button>
+          <button
+            onClick={toggleShades}
+            disabled={isDragging}
+            className={`p-1.5 hover:bg-black/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${showShades ? 'bg-black/20' : ''}`}
+            title={showShades ? "Hide shades" : "Show shades"}
+          >
+            <Layers size={16} />
+          </button>
+          <div
+            onPointerDown={(e) => dragControls.start(e)}
+            className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-black/10 rounded-full transition-colors"
+            title="Drag to reorder"
+          >
+            <GripVertical size={16} />
+          </div>
+          <button
+            onClick={() => copyToClipboard()}
+            disabled={isDragging}
+            className="p-1.5 hover:bg-black/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Copy HEX"
+          >
+            <Copy size={16} />
+          </button>
+          <button
+            onClick={handleFavorite}
+            disabled={isDragging}
+            className="p-1.5 hover:bg-black/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Save color"
+          >
+            <Bookmark size={16} />
+          </button>
+        </div>
+
+        {/* Main Color Info (Always at bottom) */}
+        <div className="flex flex-col items-center gap-1.5 z-10 px-2 w-full">
+           <button
+            onClick={() => dispatch(toggleLock(color.id))}
+            disabled={isDragging}
+            className="p-2 hover:bg-black/10 rounded-xl transition-all mb-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {color.locked ? <Lock size={20} fill="transparent" /> : <Unlock size={20}/>}
+          </button>
+
+          <h2
+            className="text-lg font-bold tracking-wider cursor-pointer hover:scale-105 transition-transform uppercase mb-1 disabled:cursor-not-allowed disabled:hover:scale-100"
+            onClick={() => !isDragging && copyToClipboard()}
+            disabled={isDragging}
+          >
+            {color.hex.replace('#', '')}
+          </h2>
+
+          <p className="text-xs font-bold opacity-60 uppercase tracking-widest text-center truncate w-full">
+            {colorName}
+          </p>
+        </div>
+
+        </Reorder.Item>
+
+      {/* Add Column Hitbox - Fixed to not interfere with column hover */}
+      {index < total - 1 && (
+        <div 
+          className="absolute top-1/2 z-30 group pointer-events-none"
+          style={{ 
+            left: `${((index + 1) * 100) / total}%`,
+            top: '60%',
+            transform: 'translate(-50%, -50%)',
+            width: '100px',
+            height: '120px'
+          }}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              dispatch(addColumn(index + 1));
+            }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-auto opacity-0 group-hover:opacity-100 transition-all"
+          >
+            <div className="w-8 h-8 bg-white text-black rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-all z-10 border border-gray-100">
+              <Plus size={16} />
+            </div>
+          </button>
+        </div>
+      )}
+    </>
   );
 };
 
 function Generate() {
   const dispatch = useDispatch();
   const colors = useSelector((state) => state.palette.colors);
+  const theoryRule = useSelector((state) => state.palette.theoryRule);
+  const history = useSelector((state) => state.palette.history);
+  const pointer = useSelector((state) => state.palette.pointer);
+  const isAuthenticated = useSelector((state) => state.ui.isAuthenticated);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isColorDetailsOpen, setIsColorDetailsOpen] = useState(false);
+  const [selectedColorIndex, setSelectedColorIndex] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleKeyDown = useCallback((e) => {
     if (e.code === 'Space') {
       e.preventDefault();
       dispatch(generatePalette());
     }
-  }, [dispatch]);
+    if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      setIsFullscreen(!isFullscreen);
+    }
+    if (e.key === 'Escape' && isFullscreen) {
+      setIsFullscreen(false);
+    }
+  }, [dispatch, isFullscreen]);
+
+  const handleSavePalette = () => {
+    if (!isAuthenticated) {
+      dispatch(addNotification({
+        message: 'Please sign in to save palettes!',
+        type: 'error'
+      }));
+      dispatch(openAuthModal());
+      return;
+    }
+    
+    dispatch(toggleFavorite(colors));
+    dispatch(addNotification({
+      message: 'Palette saved to favorites!',
+      type: 'save'
+    }));
+  };
+
+  const handleViewColorDetails = () => {
+    if (colors.length === 0) {
+      dispatch(addNotification({
+        message: 'Please generate a palette first!',
+        type: 'error'
+      }));
+      return;
+    }
+    
+    setIsColorDetailsOpen(true);
+    setSelectedColorIndex(0);
+  };
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
+    // Initialize history with current colors if history is empty
     dispatch(setPalette(colors));
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+    
+    // Add drag event listeners
+    const handleDragStart = () => setIsDragging(true);
+    const handleDragEnd = () => setIsDragging(false);
+    
+    window.addEventListener('dragstart', handleDragStart);
+    window.addEventListener('dragend', handleDragEnd);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('dragstart', handleDragStart);
+      window.removeEventListener('dragend', handleDragEnd);
+    };
+  }, [handleKeyDown, colors]);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-white">
-      <Navbar />
+    <div className={`h-screen flex flex-col overflow-hidden bg-white transition-all duration-300 ${
+      isFullscreen ? 'fixed inset-0 z-[9999]' : ''
+    } ${isDragging ? 'pointer-events-none select-none' : ''}`}>
+      {!isFullscreen && <Navbar />}
 
       {/* Sub-header / Toolbar */}
-      <div className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white z-30">
+      <div className={`h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white z-30 transition-all duration-300 ${
+        isFullscreen ? 'px-4' : ''
+      }`}>
         <div className="flex items-center gap-8">
-            <span className="text-sm text-gray-400 font-medium">Press the spacebar to generate color palettes!</span>
+          <span className="text-sm text-gray-400 font-medium">
+            Press <kbd className="bg-gray-100 px-1 py-0.5 rounded text-xs">Space</kbd> to generate!
+            {isFullscreen && <span className="ml-2 text-xs text-blue-600 font-bold">FULLSCREEN MODE</span>}
+          </span>
+          
+          {/* Color Theory Mode Selector */}
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-gray-700">Mode:</span>
+            <ModeDropdown 
+              value={theoryRule}
+              onChange={(mode) => dispatch(setTheoryRule(mode))}
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => dispatch(undo())}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
-            title="Undo"
-          >
-            <Undo2 size={20} />
-          </button>
-          <button
-            onClick={() => dispatch(redo())}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
-            title="Redo"
-          >
-            <Redo2 size={20} />
-          </button>
+          <div className="flex items-center gap-1 bg-gray-50/50 p-1.5 rounded-2xl border border-gray-100/50">
+            <button
+              onClick={() => dispatch(undo())}
+              disabled={pointer <= 0}
+              className={`p-2.5 rounded-[12px] transition-all font-black text-sm ${
+                pointer <= 0 
+                  ? 'text-gray-200 cursor-not-allowed' 
+                  : 'text-black bg-white shadow-sm cursor-pointer'
+              }`}
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 size={20} strokeWidth={2.5} />
+            </button>
+            <button
+              onClick={() => dispatch(redo())}
+              disabled={pointer >= history.length - 1}
+              className={`p-2.5 rounded-[12px] transition-all font-black text-sm ${
+                pointer >= history.length - 1 
+                  ? 'text-gray-200 cursor-not-allowed' 
+                  : 'text-black bg-white shadow-sm cursor-pointer'
+              }`}
+              title="Redo (Ctrl+Y)"
+            >
+              <Redo2 size={20} strokeWidth={2.5} />
+            </button>
+          </div>
           <div className="w-px h-6 bg-gray-200 mx-2" />
 
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600" title="View">
+          <button 
+            onClick={handleViewColorDetails}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600" 
+            disabled={isDragging}
+            title="View color details"
+          >
             <Eye size={20} />
           </button>
           <button
             onClick={() => setIsExportOpen(true)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+            disabled={isDragging}
             title="Export"
           >
             <Share2 size={20} />
           </button>
           <button
-            onClick={() => dispatch(toggleFavorite(colors))}
+            onClick={handleSavePalette}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+            disabled={isDragging}
             title="Save palette"
           >
             <Heart size={20} />
           </button>
 
           <div className="w-px h-6 bg-gray-200 mx-2" />
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600">
+          <button 
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+            title={isFullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen (F)"}
+          >
             <Maximize2 size={20} />
           </button>
         </div>
@@ -203,11 +484,215 @@ function Generate() {
             color={color}
             index={index}
             total={colors.length}
+            isDragging={isDragging}
           />
         ))}
       </Reorder.Group>
 
       <ExportModal isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} />
+      <Notifications />
+      
+      {/* Color Details Modal */}
+      <AnimatePresence>
+        {isColorDetailsOpen && (
+          <>
+            <div 
+              className="fixed inset-0 bg-black/50 z-50" 
+              onClick={() => setIsColorDetailsOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-50 w-[600px] max-h-[80vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <h2 className="text-2xl font-bold text-gray-900">Color Details</h2>
+                <button
+                  onClick={() => setIsColorDetailsOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Color Tabs */}
+              <div className="flex border-b border-gray-100 px-6">
+                {colors.map((color, index) => (
+                  <button
+                    key={color.id}
+                    onClick={() => setSelectedColorIndex(index)}
+                    className={`px-4 py-3 font-medium text-sm transition-all border-b-2 ${
+                      selectedColorIndex === index
+                        ? 'text-blue-600 border-blue-600'
+                        : 'text-gray-500 border-transparent hover:text-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-4 h-4 rounded-full border border-gray-200" 
+                        style={{ backgroundColor: color.hex }}
+                      />
+                      <span>{color.hex.replace('#', '')}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Color Details Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {colors[selectedColorIndex] && (
+                  <div className="space-y-6">
+                    {/* Color Preview */}
+                    <div 
+                      className="h-32 rounded-xl shadow-inner flex items-center justify-center"
+                      style={{ backgroundColor: colors[selectedColorIndex].hex }}
+                    >
+                      <span className="text-2xl font-bold text-white drop-shadow-lg">
+                        {colors[selectedColorIndex].hex.toUpperCase()}
+                      </span>
+                    </div>
+
+                    {/* Color Name */}
+                    <div className="text-center">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        {(() => {
+                          try {
+                            return chroma(colors[selectedColorIndex].hex).name();
+                          } catch {
+                            return 'Unknown Color';
+                          }
+                        })()}
+                      </h3>
+                      <p className="text-md font-mono text-gray-700">{colors[selectedColorIndex].hex.toUpperCase()}</p>
+                    </div>
+
+                    {/* Color Values */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-bold text-gray-900">Color Values</h4>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="font-medium text-gray-600">HEX</span>
+                          <span className="font-mono font-bold text-gray-900">{colors[selectedColorIndex].hex.toUpperCase()}</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="font-medium text-gray-600">RGB</span>
+                          <span className="font-mono font-bold text-gray-900">
+                            {(() => {
+                              const rgb = chroma(colors[selectedColorIndex].hex).rgb();
+                              return `${rgb[0]}, ${rgb[1]}, ${rgb[2]}`;
+                            })()}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="font-medium text-gray-600">HSL</span>
+                          <span className="font-mono font-bold text-gray-900">
+                            {(() => {
+                              const hsl = chroma(colors[selectedColorIndex].hex).hsl();
+                              return `${Math.round(hsl[0])}°, ${Math.round(hsl[1])}%, ${Math.round(hsl[2])}%`;
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Color Variations */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-bold text-gray-900">Color Variations</h4>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8].map((lightness, i) => {
+                          const variantColor = chroma(colors[selectedColorIndex].hex).set('hsl.l', lightness).hex();
+                          return (
+                            <div key={i} className="text-center">
+                              <div
+                                className="h-12 rounded-lg mb-1"
+                                style={{ backgroundColor: variantColor }}
+                              />
+                              <p className="text-xs font-mono text-gray-500">{variantColor.toUpperCase()}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Complementary Colors */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-bold text-gray-900">Complementary Palette</h4>
+                      <div className="grid grid-cols-4 gap-2">
+                        {(() => {
+                          const baseColor = chroma(colors[selectedColorIndex].hex);
+                          const hsl = baseColor.hsl();
+                          return [
+                            baseColor.set('hsl.h', (hsl[0] + 180) % 360).hex(), // Complementary
+                            baseColor.set('hsl.h', (hsl[0] + 120) % 360).hex(), // Triadic 1
+                            baseColor.set('hsl.h', (hsl[0] + 240) % 360).hex(), // Triadic 2
+                            baseColor.set('hsl.h', (hsl[0] + 60) % 360).hex(),  // Split-complementary 1
+                            baseColor.set('hsl.h', (hsl[0] + 300) % 360).hex(), // Split-complementary 2
+                            baseColor.set('hsl.h', (hsl[0] + 90) % 360).hex(),  // Tetradic 1
+                            baseColor.set('hsl.l', 0.9).hex()                 // Light variant
+                          ].map((compColor, i) => (
+                            <div key={i} className="text-center">
+                              <div
+                                className="h-12 rounded-lg mb-1"
+                                style={{ backgroundColor: compColor }}
+                              />
+                              <p className="text-xs font-mono text-gray-500">{compColor.toUpperCase()}</p>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(colors[selectedColorIndex].hex.toUpperCase());
+                          dispatch(addNotification({
+                            message: `Copied ${colors[selectedColorIndex].hex.toUpperCase()} to clipboard!`,
+                            type: 'copy'
+                          }));
+                        }}
+                        className="py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Copy size={18} />
+                        Copy HEX
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!isAuthenticated) {
+                            dispatch(addNotification({
+                              message: 'Please sign in to save favorites!',
+                              type: 'error'
+                            }));
+                            dispatch(openAuthModal());
+                            return;
+                          }
+                          
+                          dispatch(toggleFavorite([colors[selectedColorIndex]]));
+                          dispatch(addNotification({
+                            message: `Color added to favorites!`,
+                            type: 'favorite'
+                          }));
+                        }}
+                        className="py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Bookmark size={18} />
+                        Add to Favorites
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

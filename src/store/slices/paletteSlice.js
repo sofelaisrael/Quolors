@@ -15,7 +15,7 @@ const initialState = {
   })),
   history: [],
   pointer: -1,
-  theoryRule: 'Monochromatic', // Default rule
+  theoryRule: 'Random', // Default rule
 };
 
 const paletteSlice = createSlice({
@@ -75,6 +75,18 @@ const paletteSlice = createSlice({
             baseColor.set('hsl.h', (baseColor.get('hsl.h') + (i * 120)) % 360).hex()
           );
           break;
+        case 'Split-Complementary':
+          newHexes = Array.from({ length: count }, (_, i) => {
+            const baseHue = baseColor.get('hsl.h');
+            if (i === 0) return baseColor.hex();
+            if (i === 1) return baseColor.set('hsl.h', (baseHue + 150) % 360).hex();
+            if (i === 2) return baseColor.set('hsl.h', (baseHue + 210) % 360).hex();
+            return baseColor.set('hsl.h', (baseHue + (i * 30)) % 360).hex();
+          });
+          break;
+        case 'Random':
+          newHexes = Array.from({ length: count }, () => chroma.random().hex());
+          break;
         default:
           newHexes = Array.from({ length: count }, () => chroma.random().hex());
       }
@@ -105,8 +117,24 @@ const paletteSlice = createSlice({
     addColumn: (state, action) => {
       if (state.colors.length < 10) {
         const index = action.payload ?? state.colors.length;
+        let newColor;
+        
+        // Generate intermediate color between adjacent colors
+        if (index > 0 && index < state.colors.length) {
+          const leftColor = state.colors[index - 1];
+          const rightColor = state.colors[index];
+          // Create color that's exactly between the two adjacent colors
+          newColor = chroma.mix(leftColor.hex, rightColor.hex, 0.5).hex();
+        } else if (index === 0) {
+          // If adding at the beginning, use the first color as reference
+          newColor = chroma(state.colors[0].hex).set('hsl.l', '+10%').hex();
+        } else {
+          // If adding at the end, use the last color as reference
+          newColor = chroma(state.colors[state.colors.length - 1].hex).set('hsl.l', '+10%').hex();
+        }
+        
         state.colors.splice(index, 0, {
-          hex: chroma.random().hex(),
+          hex: newColor,
           locked: false,
           id: Math.random().toString(36).substr(2, 9),
         });

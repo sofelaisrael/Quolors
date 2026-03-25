@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Search, Heart, ExternalLink, Filter, TrendingUp, Clock, Star } from 'lucide-react';
 import { setPalette } from './store/slices/paletteSlice';
 import { toggleFavorite } from './store/slices/favoritesSlice';
+import { openAuthModal } from './store/slices/uiSlice';
+import { addNotification } from './store/slices/notificationSlice';
 import Navbar from './Components/Navbar';
 import { motion, AnimatePresence } from 'framer-motion';
 import chroma from 'chroma-js';
@@ -30,6 +32,7 @@ const EXPLORE_PALETTES = [
 const ExploreCard = ({ colors }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const isAuthenticated = useSelector((state) => state.ui.isAuthenticated);
 
   const paletteObj = colors.map(hex => ({
     hex,
@@ -40,6 +43,23 @@ const ExploreCard = ({ colors }) => {
   const openInGenerator = () => {
     dispatch(setPalette(paletteObj));
     navigate('/Generate');
+  };
+
+  const handleFavorite = () => {
+    if (!isAuthenticated) {
+      dispatch(addNotification({
+        message: 'Please sign in to save palettes!',
+        type: 'error'
+      }));
+      dispatch(openAuthModal());
+      return;
+    }
+    
+    dispatch(toggleFavorite(paletteObj));
+    dispatch(addNotification({
+      message: 'Palette added to favorites!',
+      type: 'favorite'
+    }));
   };
 
   return (
@@ -71,7 +91,7 @@ const ExploreCard = ({ colors }) => {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => dispatch(toggleFavorite(paletteObj))}
+            onClick={handleFavorite}
             className="p-2.5 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-xl transition-all border border-gray-50 hover:border-red-100 active:scale-90"
             title="Save to Favourites"
           >

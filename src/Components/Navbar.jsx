@@ -1,15 +1,24 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, ChevronDown, LayoutGrid, Palette, Image, Ruler, Monitor, Layers } from 'lucide-react'
+import { Menu, X, ChevronDown, LayoutGrid, Palette, Image, Ruler, Monitor, Layers, LogOut, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useDispatch } from 'react-redux'
-import { openAuthModal } from '../store/slices/uiSlice'
+import { useDispatch, useSelector } from 'react-redux'
+import { openAuthModal, logout } from '../store/slices/uiSlice'
+import { supabase } from '../services/supabase'
 
 function Navbar() {
   const dispatch = useDispatch()
   const [isToolsOpen, setIsToolsOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const location = useLocation()
+  const isAuthenticated = useSelector((state) => state.ui.isAuthenticated)
+  const user = useSelector((state) => state.ui.user)
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    setIsUserMenuOpen(false)
+  }
 
   const tools = [
     { name: 'Palette Generator', icon: <Palette size={18} />, path: '/Generate' },
@@ -78,18 +87,64 @@ function Navbar() {
       </div>
 
       <div className="flex items-center gap-4">
-        <button
-            onClick={() => dispatch(openAuthModal())}
-            className="hidden md:block text-sm font-bold text-gray-600 hover:text-gray-900 px-3 transition-colors"
-        >
-            Sign in
-        </button>
-        <button
-            onClick={() => dispatch(openAuthModal())}
-            className="px-4 py-2 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-50 active:scale-95"
-        >
-            Sign up
-        </button>
+        {isAuthenticated && user ? (
+          <div className="relative">
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              {user.avatar ? (
+                <img 
+                  src={user.avatar} 
+                  alt={user.name} 
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <User size={16} className="text-white" />
+                </div>
+              )}
+              <span className="hidden md:block text-sm font-medium text-gray-700">
+                {user.name}
+              </span>
+              <ChevronDown size={14} className={`text-gray-400 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {isUserMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute top-full right-0 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 mt-2 z-50"
+                >
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <LogOut size={16} />
+                    Sign out
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <>
+            <button
+                onClick={() => dispatch(openAuthModal())}
+                className="hidden md:block text-sm font-bold text-gray-600 hover:text-gray-900 px-3 transition-colors"
+            >
+                Sign in
+            </button>
+            <button
+                onClick={() => dispatch(openAuthModal())}
+                className="px-4 py-2 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-50 active:scale-95"
+            >
+                Sign up
+            </button>
+          </>
+        )}
         <button
             className="md:hidden p-2 text-gray-600"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -121,12 +176,21 @@ function Navbar() {
                 </Link>
               ))}
               <hr className="my-4 border-gray-100" />
-              <button
-                onClick={() => { dispatch(openAuthModal()); setIsMobileMenuOpen(false); }}
-                className="text-lg font-bold text-blue-600 px-4 py-3 text-left"
-              >
-                Sign in
-              </button>
+              {!isAuthenticated ? (
+                <button
+                  onClick={() => { dispatch(openAuthModal()); setIsMobileMenuOpen(false); }}
+                  className="text-lg font-bold text-blue-600 px-4 py-3 text-left"
+                >
+                  Sign in
+                </button>
+              ) : (
+                <button
+                  onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                  className="text-lg font-bold text-red-600 px-4 py-3 text-left"
+                >
+                  Sign out
+                </button>
+              )}
               <button className="text-lg font-bold text-pink-500 px-4 py-3 text-left">
                 Go Pro
               </button>

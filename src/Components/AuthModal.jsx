@@ -2,123 +2,233 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Github, Chrome, Mail, Apple } from 'lucide-react';
-import { closeAuthModal } from '../store/slices/uiSlice';
+import { closeAuthModal, login } from '../store/slices/uiSlice';
+import { addNotification } from '../store/slices/notificationSlice';
+import { supabase } from '../services/supabase';
 
 const AuthModal = () => {
   const dispatch = useDispatch();
   const isOpen = useSelector((state) => state.ui.isAuthModalOpen);
 
+  const handleSocialLogin = async (provider) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider.toLowerCase(),
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        dispatch(addNotification({
+          message: `Error signing in with ${provider}: ${error.message}`,
+          type: 'error'
+        }));
+        return;
+      }
+
+      // The auth state change will be handled by the auth listener
+      dispatch(addNotification({
+        message: `Signing in with ${provider}...`,
+        type: 'success'
+      }));
+    } catch (error) {
+      dispatch(addNotification({
+        message: `Unexpected error with ${provider}`,
+        type: 'error'
+      }));
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={() => dispatch(closeAuthModal())}
-          className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        />
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => dispatch(closeAuthModal())}
+            className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm"
+          />
 
-        {/* Modal Content */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row min-h-[600px]"
-        >
-          {/* Left Side: Visual/Branding */}
-          <div className="hidden md:flex md:w-5/12 bg-blue-600 p-12 text-white flex-col justify-between relative overflow-hidden">
-            <div className="z-10">
-              <div className="flex items-center gap-2 mb-8">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                  <div className="w-4 h-4 bg-blue-600 rounded-full" />
-                </div>
-                <span className="text-xl font-black tracking-tighter">Quolors</span>
-              </div>
-              <h1 className="text-4xl font-bold leading-tight mb-4">
-                The super fast color palettes generator!
-              </h1>
-              <p className="text-blue-100 text-lg">
-                Create the perfect palette or get inspired by thousands of beautiful color schemes.
-              </p>
+          {/* Modal Content - Slide up from bottom */}
+          <motion.div
+            initial={{ opacity: 0, y: '100%' }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed bottom-0 left-0 right-0 z-[100] bg-white rounded-t-3xl shadow-2xl max-h-[90vh] overflow-hidden"
+          >
+            {/* Handle Bar */}
+            <div className="flex border-b border-gray-300 justify-center py-3">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
 
-            {/* Background pattern/elements */}
-            <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-blue-500 rounded-full blur-3xl opacity-50" />
-            <div className="absolute top-1/2 -left-10 w-40 h-40 bg-blue-400 rounded-full blur-2xl opacity-30" />
-          </div>
-
-          {/* Right Side: Form */}
-          <div className="flex-1 p-12 flex flex-col justify-center relative">
-            <button
-              onClick={() => dispatch(closeAuthModal())}
-              className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-900 transition-colors"
-            >
-              <X size={24} />
-            </button>
-
-            <div className="max-w-md mx-auto w-full">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
-              <p className="text-gray-500 mb-8">Sign in to your Quolors account</p>
-
-              {/* Social Logins */}
-              <div className="grid grid-cols-2 gap-4 mb-8">
-                <button className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-semibold">
-                  <Chrome size={20} className="text-gray-900" />
-                  Google
-                </button>
-                <button className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-semibold">
-                  <Apple size={20} fill="currentColor" />
-                  Apple
-                </button>
-              </div>
-
-              <div className="relative mb-8 text-center">
-                <hr className="border-gray-100" />
-                <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-white px-4 text-sm text-gray-400 font-medium">
-                  OR
-                </span>
-              </div>
-
-              {/* Email Login Form */}
-              <form className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    placeholder="name@example.com"
-                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all"
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-bold text-gray-700">Password</label>
-                    <a href="#" className="text-sm font-bold text-blue-600 hover:underline">Forgot?</a>
+            {/* Modal Content - Split Layout */}
+            <div className="flex flex-col md:flex-row min-h-[500px]">
+              {/* Left Side: Text Content */}
+              <div className="flex-1 p-8 md:p-12 flex flex-col justify-center">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                    <div className="w-5 h-5 bg-white rounded-full" />
                   </div>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all"
-                  />
+                  <h1 className="text-2xl font-bold text-gray-900">Quolors</h1>
                 </div>
-                <button
-                  type="submit"
-                  className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 active:scale-[0.98]"
-                >
-                  Sign in
-                </button>
-              </form>
 
-              <p className="text-center mt-8 text-gray-500 font-medium">
-                Don't have an account? <button className="text-blue-600 font-bold hover:underline">Sign up</button>
-              </p>
+                {/* Welcome Text */}
+                <div className="mb-8">
+                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                    Welcome to Quolors
+                  </h2>
+                  <p className="text-gray-500 text-lg md:text-xl">
+                    Create beautiful color palettes instantly
+                  </p>
+                </div>
+
+                {/* Social Login Buttons */}
+                <div className="space-y-3">
+                  <button 
+                    onClick={() => handleSocialLogin('Google')}
+                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl hover:bg-gray-50 transition-all font-semibold text-lg group"
+                  >
+                    <Chrome size={24} className="text-gray-900" />
+                    <span>Continue with Google</span>
+                  </button>
+
+                  <button 
+                    onClick={() => handleSocialLogin('Apple')}
+                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-black text-white rounded-2xl hover:bg-gray-900 transition-all font-semibold text-lg group"
+                  >
+                    <Apple size={24} fill="currentColor" />
+                    <span>Continue with Apple</span>
+                  </button>
+
+                  <button 
+                    onClick={() => handleSocialLogin('Github')}
+                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gray-900 text-white rounded-2xl hover:bg-gray-800 transition-all font-semibold text-lg group"
+                  >
+                    <Github size={24} />
+                    <span>Continue with GitHub</span>
+                  </button>
+                </div>
+
+                {/* Terms */}
+                <div className="mt-8 text-center">
+                  <p className="text-sm text-gray-400">
+                    By continuing, you agree to our{' '}
+                    <a href="#" className="text-blue-600 hover:underline font-medium">Terms</a>
+                    {' '}and{' '}
+                    <a href="#" className="text-blue-600 hover:underline font-medium">Privacy Policy</a>
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Side: Gradient/Visual */}
+              <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 p-12 text-white flex-col justify-between relative overflow-hidden">
+                <div className="z-10">
+                  <h3 className="text-3xl font-bold leading-tight mb-4">
+                    The super fast color palettes generator!
+                  </h3>
+                  <p className="text-white/90 text-lg mb-8">
+                    Create the perfect palette or get inspired by thousands of beautiful color schemes.
+                  </p>
+
+                  {/* Color Details Preview */}
+                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <h4 className="text-lg font-semibold mb-4 text-white">Color Details</h4>
+                    
+                    {/* Sample Color Display */}
+                    <div className="flex gap-3 mb-6">
+                      <div className="w-16 h-16 bg-blue-500 rounded-xl shadow-lg" />
+                      <div className="w-16 h-16 bg-purple-500 rounded-xl shadow-lg" />
+                      <div className="w-16 h-16 bg-pink-500 rounded-xl shadow-lg" />
+                      <div className="w-16 h-16 bg-indigo-500 rounded-xl shadow-lg" />
+                    </div>
+
+                    {/* Color Format Examples */}
+                    <div className="space-y-3 text-sm mb-6">
+                      <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                        <span className="text-white/70">HEX</span>
+                        <span className="font-mono font-semibold">#3B82F6</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                        <span className="text-white/70">RGB</span>
+                        <span className="font-mono font-semibold">59, 130, 246</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                        <span className="text-white/70">HSL</span>
+                        <span className="font-mono font-semibold">217°, 91%, 60%</span>
+                      </div>
+                    </div>
+
+                    {/* Color Variations Preview */}
+                    <div className="mb-6">
+                      <h5 className="text-sm font-semibold text-white/80 mb-3">Color Variations</h5>
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="text-center">
+                          <div className="h-8 bg-blue-300 rounded mb-1" />
+                          <p className="text-xs text-white/60 font-mono">#93C5FD</p>
+                        </div>
+                        <div className="text-center">
+                          <div className="h-8 bg-blue-400 rounded mb-1" />
+                          <p className="text-xs text-white/60 font-mono">#60A5FA</p>
+                        </div>
+                        <div className="text-center">
+                          <div className="h-8 bg-blue-600 rounded mb-1" />
+                          <p className="text-xs text-white/60 font-mono">#2563EB</p>
+                        </div>
+                        <div className="text-center">
+                          <div className="h-8 bg-blue-800 rounded mb-1" />
+                          <p className="text-xs text-white/60 font-mono">#1E40AF</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Complementary Colors Preview */}
+                    <div>
+                      <h5 className="text-sm font-semibold text-white/80 mb-3">Complementary Palette</h5>
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="text-center">
+                          <div className="h-8 bg-orange-500 rounded mb-1" />
+                          <p className="text-xs text-white/60 font-mono">#F97316</p>
+                        </div>
+                        <div className="text-center">
+                          <div className="h-8 bg-green-500 rounded mb-1" />
+                          <p className="text-xs text-white/60 font-mono">#22C55E</p>
+                        </div>
+                        <div className="text-center">
+                          <div className="h-8 bg-purple-500 rounded mb-1" />
+                          <p className="text-xs text-white/60 font-mono">#A855F7</p>
+                        </div>
+                        <div className="text-center">
+                          <div className="h-8 bg-pink-500 rounded mb-1" />
+                          <p className="text-xs text-white/60 font-mono">#EC4899</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Background decorative elements */}
+                <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-white/20 rounded-full blur-3xl opacity-50" />
+                <div className="absolute top-1/2 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl opacity-30" />
+                
+                {/* Bottom color palette preview */}
+                <div className="absolute bottom-12 left-12 right-12 flex gap-2">
+                  <div className="flex-1 h-16 bg-white/90 rounded-lg" />
+                  <div className="flex-1 h-16 bg-white/70 rounded-lg" />
+                  <div className="flex-1 h-16 bg-white/50 rounded-lg" />
+                  <div className="flex-1 h-16 bg-white/30 rounded-lg" />
+                </div>
+              </div>
             </div>
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        </>
+      )}
     </AnimatePresence>
   );
 };
