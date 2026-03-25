@@ -23,7 +23,7 @@ function Navbar() {
   const tools = [
     { name: 'Palette Generator', icon: <Palette size={18} />, path: '/Generate' },
     { name: 'Explore Palettes', icon: <LayoutGrid size={18} />, path: '/Explore' },
-    { name: 'Image Picker', icon: <Image size={18} />, path: '/Picker' },
+    { name: 'Color Extractor', icon: <Image size={18} />, path: '/Picker' },
     { name: 'Contrast Checker', icon: <Ruler size={18} />, path: '/Contrast' },
     { name: 'Visualizer', icon: <Monitor size={18} />, path: '/Visualizer' },
     { name: 'Gradient Maker', icon: <Layers size={18} />, path: '/Gradient' },

@@ -139,7 +139,6 @@ const AuthModal = () => {
 
                   {/* Color Details Preview */}
                   <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                    <h4 className="text-lg font-semibold mb-4 text-white">Color Details</h4>
                     
                     {/* Sample Color Display */}
                     <div className="flex gap-3 mb-6">
@@ -153,60 +152,22 @@ const AuthModal = () => {
                     <div className="space-y-3 text-sm mb-6">
                       <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                         <span className="text-white/70">HEX</span>
-                        <span className="font-mono font-semibold">#3B82F6</span>
+                        <div className="w-16 h-4 bg-white/20 rounded animate-pulse" />
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                      <div className="flex gap-0 justify-between items-center p-3 bg-white/5 rounded-lg">
                         <span className="text-white/70">RGB</span>
-                        <span className="font-mono font-semibold">59, 130, 246</span>
+                        <div className='flex gap-2'>
+                        <div className="w-8 h-4 bg-white/20 rounded animate-pulse" />
+                        <div className="w-8 h-4 bg-white/20 rounded animate-pulse" />
+                        <div className="w-8 h-4 bg-white/20 rounded animate-pulse" />
+                        </div>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                         <span className="text-white/70">HSL</span>
-                        <span className="font-mono font-semibold">217°, 91%, 60%</span>
-                      </div>
-                    </div>
-
-                    {/* Color Variations Preview */}
-                    <div className="mb-6">
-                      <h5 className="text-sm font-semibold text-white/80 mb-3">Color Variations</h5>
-                      <div className="grid grid-cols-4 gap-2">
-                        <div className="text-center">
-                          <div className="h-8 bg-blue-300 rounded mb-1" />
-                          <p className="text-xs text-white/60 font-mono">#93C5FD</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="h-8 bg-blue-400 rounded mb-1" />
-                          <p className="text-xs text-white/60 font-mono">#60A5FA</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="h-8 bg-blue-600 rounded mb-1" />
-                          <p className="text-xs text-white/60 font-mono">#2563EB</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="h-8 bg-blue-800 rounded mb-1" />
-                          <p className="text-xs text-white/60 font-mono">#1E40AF</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Complementary Colors Preview */}
-                    <div>
-                      <h5 className="text-sm font-semibold text-white/80 mb-3">Complementary Palette</h5>
-                      <div className="grid grid-cols-4 gap-2">
-                        <div className="text-center">
-                          <div className="h-8 bg-orange-500 rounded mb-1" />
-                          <p className="text-xs text-white/60 font-mono">#F97316</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="h-8 bg-green-500 rounded mb-1" />
-                          <p className="text-xs text-white/60 font-mono">#22C55E</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="h-8 bg-purple-500 rounded mb-1" />
-                          <p className="text-xs text-white/60 font-mono">#A855F7</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="h-8 bg-pink-500 rounded mb-1" />
-                          <p className="text-xs text-white/60 font-mono">#EC4899</p>
+                        <div className='flex gap-2'>
+                        <div className="w-8 h-4 bg-white/20 rounded animate-pulse" />
+                        <div className="w-8 h-4 bg-white/20 rounded animate-pulse" />
+                        <div className="w-8 h-4 bg-white/20 rounded animate-pulse" />
                         </div>
                       </div>
                     </div>

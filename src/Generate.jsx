@@ -39,7 +39,8 @@ import { addNotification } from './store/slices/notificationSlice';
 import { getColorName } from './services/colorApi';
 import Navbar from './Components/Navbar';
 import ExportModal from './Components/ExportModal';
-import Notifications from './Components/Notifications';
+import Toast from './Components/Toast';
+import { useCopyToClipboard } from './hooks/useCopyToClipboard';
 
 const ModeDropdown = ({ value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -94,7 +95,7 @@ const ModeDropdown = ({ value, onChange }) => {
   );
 };
 
-const ColorBar = ({ color, index, total, isDragging }) => {
+const ColorBar = ({ color, index, total, isDragging, onDragStart, onDragEnd, copyToClipboard }) => {
   const dispatch = useDispatch();
   const contrastColor = chroma.contrast(color.hex, 'black') > 4.5 ? 'black' : 'white';
   const dragControls = useDragControls();
@@ -135,12 +136,8 @@ const ColorBar = ({ color, index, total, isDragging }) => {
 
   const shades = generateShades(color.hex);
 
-  const copyToClipboard = (text = color.hex) => {
-    navigator.clipboard.writeText(text.toUpperCase());
-    dispatch(addNotification({
-      message: `Copied`,
-      type: 'copy'
-    }));
+  const copyColor = (text = color.hex) => {
+    copyToClipboard(text.toUpperCase(), 'Color copied!');
   };
 
   const handleFavorite = () => {
@@ -170,7 +167,11 @@ const ColorBar = ({ color, index, total, isDragging }) => {
         value={color}
         dragListener={false}
         dragControls={dragControls}
-        className="flex-1 flex flex-col items-center justify-end pb-16 group h-full relative overflow-hidde transition-colors duration-300"
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        className={`flex-1 flex flex-col items-center justify-end pb-16 group h-full relative overflow-hidde transition-colors duration-300 ${
+          isDragging ? 'cursor-grabbing' : ''
+        }`}
         style={{ backgroundColor: color.hex, color: contrastColor }}
       >
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 pointer-events-none" />
@@ -233,7 +234,7 @@ const ColorBar = ({ color, index, total, isDragging }) => {
             <GripVertical size={16} />
           </div>
           <button
-            onClick={() => copyToClipboard()}
+            onClick={() => copyColor()}
             disabled={isDragging}
             className="p-1.5 hover:bg-black/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Copy HEX"
@@ -276,7 +277,7 @@ const ColorBar = ({ color, index, total, isDragging }) => {
         </Reorder.Item>
 
       {/* Add Column Hitbox - Fixed to not interfere with column hover */}
-      {index < total - 1 && (
+      {index < total - 1 && !isDragging && (
         <div 
           className="absolute top-1/2 z-30 group pointer-events-none"
           style={{ 
@@ -316,6 +317,7 @@ function Generate() {
   const [isColorDetailsOpen, setIsColorDetailsOpen] = useState(false);
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const { copyToClipboard, showNotification, notificationMessage } = useCopyToClipboard();
 
   const handleKeyDown = useCallback((e) => {
     if (e.code === 'Space') {
@@ -366,24 +368,15 @@ function Generate() {
     // Initialize history with current colors if history is empty
     dispatch(setPalette(colors));
     
-    // Add drag event listeners
-    const handleDragStart = () => setIsDragging(true);
-    const handleDragEnd = () => setIsDragging(false);
-    
-    window.addEventListener('dragstart', handleDragStart);
-    window.addEventListener('dragend', handleDragEnd);
-    
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('dragstart', handleDragStart);
-      window.removeEventListener('dragend', handleDragEnd);
     };
   }, [handleKeyDown, colors]);
 
   return (
     <div className={`h-screen flex flex-col overflow-hidden bg-white transition-all duration-300 ${
       isFullscreen ? 'fixed inset-0 z-[9999]' : ''
-    } ${isDragging ? 'pointer-events-none select-none' : ''}`}>
+    } ${isDragging ? 'select-none' : ''}`}>
       {!isFullscreen && <Navbar />}
 
       {/* Sub-header / Toolbar */}
@@ -485,12 +478,14 @@ function Generate() {
             index={index}
             total={colors.length}
             isDragging={isDragging}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={() => setIsDragging(false)}
+            copyToClipboard={copyToClipboard}
           />
         ))}
       </Reorder.Group>
 
       <ExportModal isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} />
-      <Notifications />
       
       {/* Color Details Modal */}
       <AnimatePresence>
@@ -652,11 +647,7 @@ function Generate() {
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(colors[selectedColorIndex].hex.toUpperCase());
-                          dispatch(addNotification({
-                            message: `Copied ${colors[selectedColorIndex].hex.toUpperCase()} to clipboard!`,
-                            type: 'copy'
-                          }));
+                          copyToClipboard(colors[selectedColorIndex].hex.toUpperCase(), 'Color copied!');
                         }}
                         className="py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                       >
@@ -693,6 +684,8 @@ function Generate() {
           </>
         )}
       </AnimatePresence>
+      
+      <Toast show={showNotification} message={notificationMessage} />
     </div>
   );
 }

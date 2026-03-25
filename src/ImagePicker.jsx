@@ -6,6 +6,8 @@ import { setPalette } from './store/slices/paletteSlice';
 import { toggleFavorite } from './store/slices/favoritesSlice';
 import { addNotification } from './store/slices/notificationSlice';
 import Navbar from './Components/Navbar';
+import Toast from './Components/Toast';
+import { useCopyToClipboard } from './hooks/useCopyToClipboard';
 import { motion, AnimatePresence } from 'framer-motion';
 import chroma from 'chroma-js';
 
@@ -16,10 +18,12 @@ function ImagePicker() {
   const [selectedColors, setSelectedColors] = useState([]);
   const [isExtracting, setIsExtracting] = useState(false);
   const[showColorManager, setShowColorManager] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const canvasRef = useRef(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { favorites } = useSelector(state => state.favorites);
+  const { copyToClipboard, showNotification, notificationMessage } = useCopyToClipboard();
 
   const currentImage = images[currentImageIndex];
 
@@ -193,19 +197,8 @@ function ImagePicker() {
     }
   };
 
-  const copyToClipboard = async (hex) => {
-    try {
-      await navigator.clipboard.writeText(hex);
-      dispatch(addNotification({ message: 'Color copied to clipboard', type: 'success' }));
-    } catch (err) {
-      const textArea = document.createElement('textarea');
-      textArea.value = hex;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      dispatch(addNotification({ message: 'Color copied to clipboard', type: 'success' }));
-    }
+  const copyColor = (hex) => {
+    copyToClipboard(hex, 'Color copied!');
   };
 
   const isFavorite = (hex) => {
@@ -231,13 +224,46 @@ function ImagePicker() {
     }
   };
 
+  // Drag and drop handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (!files || files.length === 0) return;
+
+    // Filter for image files only
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      dispatch(addNotification({ message: 'Please drop image files only', type: 'error' }));
+      return;
+    }
+
+    // Create a synthetic event to reuse handleUpload
+    const syntheticEvent = { target: { files: imageFiles } };
+    handleUpload(syntheticEvent);
+  };
+
   return (
     <div className="min-h-screen bg-[#FDFDFD]">
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-8 py-20">
         <header className="text-center mb-16">
-          <h1 className="text-6xl font-black text-gray-900 tracking-tight mb-4">Image Picker</h1>
+          <h1 className="text-6xl font-black text-gray-900 tracking-tight mb-4">Color Extractor</h1>
           <p className="text-xl font-bold text-gray-400">Extract beautiful colors from any image with ease</p>
         </header>
 
@@ -254,14 +280,14 @@ function ImagePicker() {
                   Add Another Image
                 </button>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-2">
+              <div className="flex gap-4 overflow-x-aut pb-2">
                 {images.map((img, index) => (
                   <button
                     key={img.id}
                     onClick={() => switchToImage(index)}
                     className={`relative flex-shrink-0 transition-all ${
                       index === currentImageIndex 
-                        ? 'ring-4 ring-blue-500 ring-offset-2 scale-105' 
+                        ? 'ring-4 rounded ring-blue-500 ring-offset-2 scale-105' 
                         : 'hover:scale-105'
                     }`}
                   >
@@ -283,7 +309,16 @@ function ImagePicker() {
             </div>
           )}
 
-          <div className="bg-white p-12 rounded-[2.5rem] border-2 border-dashed border-gray-100 shadow-sm hover:border-blue-300 transition-all text-center relative overflow-hidden group">
+          <div 
+            className={`bg-white p-12 rounded-[2.5rem] border-2 border-dashed shadow-sm transition-all text-center relative overflow-hidden group ${
+              isDragging 
+                ? 'border-blue-500 bg-blue-50 scale-[1.02]' 
+                : 'border-gray-100 hover:border-blue-300'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             {currentImage ? (
               <div className="flex flex-col gap-10">
                 <div className="relative rounded-[2rem] overflow-hidden shadow-2xl">
@@ -453,7 +488,7 @@ function ImagePicker() {
                             <div className="mt-2 flex items-center justify-between">
                               <span className="text-xs font-black text-gray-900 uppercase tracking-tighter">{hex}</span>
                               <div className="flex gap-1">
-                                <button onClick={(e) => { e.stopPropagation(); copyToClipboard(hex); }} className="p-1 text-gray-400 hover:text-blue-500 transition-colors z-10" title="Copy color">
+                                <button onClick={(e) => { e.stopPropagation(); copyColor(hex); }} className="p-1 text-gray-400 hover:text-blue-500 transition-colors z-10" title="Copy color">
                                   <Copy size={14} />
                                 </button>
                                 <button onClick={(e) => { e.stopPropagation(); toggleFavoriteColor(hex); }} className={`p-1 rounded transition-colors z-10 ${favorited ? 'text-red-500 hover:text-red-600' : 'text-gray-400 hover:text-red-500'}`} title="Add to favorites">
@@ -523,7 +558,7 @@ function ImagePicker() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    copyToClipboard(hex);
+                                    copyColor(hex);
                                   }}
                                   className="p-1 text-gray-400 hover:text-blue-500 transition-colors z-10"
                                   title="Copy color"
@@ -557,6 +592,8 @@ function ImagePicker() {
           </AnimatePresence>
         </div>
       </main>
+      
+      <Toast show={showNotification} message={notificationMessage} />
     </div>
   );
 }

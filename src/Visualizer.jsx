@@ -3,6 +3,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Link, useSearchParams } from 'react-router-dom';
 import { setPalette } from './store/slices/paletteSlice';
 import Navbar from './Components/Navbar';
+import EditPaletteModal from './Components/EditPaletteModal';
+import Toast from './Components/Toast';
+import { useCopyToClipboard } from './hooks/useCopyToClipboard';
 import { motion } from 'framer-motion';
 import {
   Monitor,
@@ -12,7 +15,8 @@ import {
   Layers,
   CreditCard,
   Palette,
-  Sparkles
+  Sparkles,
+  Edit3
 } from 'lucide-react';
 
 const PRESET_PALETTES = [
@@ -25,7 +29,6 @@ const PRESET_PALETTES = [
   { name: 'Coral Reef', colors: ['#023047', '#219ebc', '#8ecae6', '#ffb703', '#fb8500'] },
   { name: 'Lavender Dream', colors: ['#7209b7', '#8b5cf6', '#a78bfa', '#c4b5fd', '#e9d5ff'] },
   { name: 'Vintage Dust', colors: ['#22223b', '#4a4e69', '#9a8c98', '#c9ada7', '#f2e9e4'] },
-  { name: 'Active Palette', colors: ['#b435bc', '#917546', '#ac1f2c', '#95f8f7', '#e0f333'] },
 ];
 
 const MockLandingPage = ({ colors, device }) => {
@@ -142,14 +145,14 @@ const MockLandingPage = ({ colors, device }) => {
             <main className="flex-1 p-12 flex flex-col justify-center gap-8">
                 <div className="flex flex-col gap-4">
                     <div className="h-4 w-32 rounded-full" style={{ backgroundColor: secondary, opacity: 0.2 }} />
-                    <h2 className="text-4xl font-black leading-none" style={{ color: text }}>
+                    <h2 className="text-3xl font-black leading-none" style={{ color: text }}>
                         Beautiful designs, <br /> simplified.
                     </h2>
-                    <p className="text-lg font-medium text-gray-400 max-w-sm">
+                    <p className="text-sm font-medium text-gray-400 max-w-sm">
                         Visualize how your color palette looks on real-world UI components.
                     </p>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-4 text-sm">
                     <button className="px-8 py-3 rounded-xl font-bold text-white shadow-lg" style={{ backgroundColor: primary }}>
                         Get Started
                     </button>
@@ -166,7 +169,7 @@ const MockLandingPage = ({ colors, device }) => {
                     <div className="h-3 w-20 rounded-full bg-gray-100" />
                     <div className="h-3 w-32 rounded-full bg-gray-50" />
                 </div>
-                <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-50 flex flex-col gap-4 translate-y-8">
+                <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-50 flex flex-col gap-4 translate-y-12">
                     <CreditCard size={24} style={{ color: primary }} />
                     <div className="h-3 w-24 rounded-full bg-gray-100" />
                     <div className="h-3 w-16 rounded-full" style={{ backgroundColor: secondary }} />
@@ -195,6 +198,8 @@ function Visualizer() {
   const [device, setDevice] = useState('desktop');
   const [searchParams] = useSearchParams();
   const [activePalette, setActivePalette] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { copyToClipboard, showNotification, notificationMessage } = useCopyToClipboard();
 
   // Load palette from URL if specified
   useEffect(() => {
@@ -236,6 +241,11 @@ function Visualizer() {
     window.history.replaceState({}, '', newUrl);
   }, [loadPresetPalette]);
 
+  const handleSavePalette = (editedColors) => {
+    dispatch(setPalette(editedColors));
+    copyToClipboard('Palette updated successfully!', 'Palette saved!');
+  };
+
   return (
     <div className="min-h-screen bg-[#FDFDFD]">
       <Navbar />
@@ -262,12 +272,21 @@ function Visualizer() {
           </div>
         </header>
 
-        <div className="grid lg:grid-cols-4 gap-12">
+        <div className="grid lg:grid-cols-4 gap-6">
             {/* Current Palette Sidebar with Suggestions */}
             <aside className="lg:col-span-1 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-50 flex flex-col gap-6 self-start">
-                <div className="flex items-center gap-2 mb-2">
-                    <Palette size={20} className="text-blue-600" />
-                    <span className="text-sm font-black text-gray-900 uppercase tracking-widest">Active Palette</span>
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                        <Palette size={20} className="text-blue-600" />
+                        <span className="text-sm font-black text-gray-900 uppercase tracking-widest">Active Palette</span>
+                    </div>
+                    <button
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors group"
+                        title="Edit palette"
+                    >
+                        <Edit3 size={16} className="text-gray-400 group-hover:text-gray-600" />
+                    </button>
                 </div>
                 <div className="flex flex-col gap-4">
                     {colors.map((c, i) => (
@@ -301,7 +320,7 @@ function Visualizer() {
                                             : 'hover:bg-gray-50 cursor-pointer'
                                     }`}
                                 >
-                                    <div className="flex gap-1 justify-center">
+                                    <div className="flex gap-1">
                                         {palette.colors.map((color, j) => (
                                             <div
                                                 key={j}
@@ -337,6 +356,15 @@ function Visualizer() {
             </section>
         </div>
       </main>
+      
+      <EditPaletteModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        colors={colors}
+        onSave={handleSavePalette}
+      />
+      
+      <Toast show={showNotification} message={notificationMessage} />
     </div>
   );
 }

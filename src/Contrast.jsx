@@ -1,5 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import Navbar from './Components/Navbar';
+import ColorPickerModal from './Components/ColorPickerModal';
+import Toast from './Components/Toast';
+import { useCopyToClipboard } from './hooks/useCopyToClipboard';
 import { motion } from 'framer-motion';
 import chroma from 'chroma-js';
 import {
@@ -20,13 +23,13 @@ const ContrastGrade = ({ score, text, size }) => {
   const pass = (size === 'large' && score >= 3) || (size === 'normal' && score >= 4.5);
 
   return (
-    <div className="flex items-center justify-between p-6 bg-white border border-gray-100 rounded-3xl shadow-sm">
+    <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm">
       <div className="flex flex-col">
-        <span className="text-sm font-black text-gray-400 uppercase tracking-tighter mb-1">{text}</span>
-        <span className="text-2xl font-black text-gray-900">{grade}</span>
+        <span className="text-xs font-black text-gray-400 uppercase tracking-tighter mb-1">{text}</span>
+        <span className="text-lg font-black text-gray-900">{grade}</span>
       </div>
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${pass ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'}`}>
-        {pass ? <CheckCircle2 size={24} /> : <XCircle size={24} />}
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${pass ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'}`}>
+        {pass ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
       </div>
     </div>
   );
@@ -37,6 +40,9 @@ function Contrast() {
   const [text, setText] = useState('#264653');
   const [showBackgroundSuggestions, setShowBackgroundSuggestions] = useState(false);
   const [showTextSuggestions, setShowTextSuggestions] = useState(false);
+  const [isBackgroundModalOpen, setIsBackgroundModalOpen] = useState(false);
+  const [isTextModalOpen, setIsTextModalOpen] = useState(false);
+  const { copyToClipboard, showNotification, notificationMessage } = useCopyToClipboard();
 
   const contrastRatio = useMemo(() => {
     try {
@@ -140,69 +146,69 @@ const getContrastSuggestions = (baseColor, isBackground = true) => {
 };
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD]">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-8 py-20">
-        <header className="text-center mb-16">
-          <h1 className="text-6xl font-black text-gray-900 tracking-tight mb-4">Contrast Checker</h1>
-          <p className="text-xl font-bold text-gray-400">Ensure your designs meet accessibility standards</p>
+      <main className="max-w-5xl mx-auto px-6 py-12">
+        <header className="text-center mb-12">
+          <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-3">Contrast Checker</h1>
+          <p className="text-lg font-bold text-gray-400">Ensure your designs meet accessibility standards</p>
         </header>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
+        <div className="grid lg:grid-cols-2 gap-8 items-start">
           {/* Controls */}
-          <section className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-100">
-             <div className="flex flex-col gap-10">
-                <div className="flex flex-col gap-4">
-                    <label className="text-sm font-black text-gray-400 uppercase tracking-widest ml-1">Background Color</label>
-                    <div className="flex items-center gap-4">
-                        <input
-                            type="color"
-                            value={background}
-                            onChange={(e) => setBackground(e.target.value)}
-                            className="w-20 h-20 rounded-2xl cursor-pointer border-none p-0 bg-transparent overflow-hidden"
-                        />
-                        <input
-                            type="text"
-                            value={background}
-                            onChange={(e) => setBackground(e.target.value)}
-                            className="flex-1 h-16 px-6 text-xl font-black rounded-2xl border-2 border-gray-50 bg-gray-50 focus:bg-white focus:border-blue-500 transition-all outline-none"
-                        />
-                    </div>
+          <section className="bg-white p-6 rounded-xl border border-gray-100 shadow-lg shadow-gray-100">
+             <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-3">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Background Color</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setIsBackgroundModalOpen(true)}
+                      className="w-12 h-12 rounded-lg cursor-pointer border-2 border-gray-200 shadow hover:scale-105 transition-transform relative overflow-hidden"
+                      style={{ backgroundColor: background }}
+                    />
+                    <input
+                      type="text"
+                      value={background}
+                      onChange={(e) => setBackground(e.target.value)}
+                      className="flex-1 h-12 px-4 text-base font-black rounded-lg border-2 border-gray-50 bg-gray-50 focus:bg-white focus:border-blue-500 transition-all outline-none"
+                      placeholder="#FFFFFF"
+                    />
+                  </div>
                 </div>
 
-                <div className="flex justify-center -my-6 relative z-10">
+                <div className="flex justify-center -my-4 relative z-10">
                     <button
                         onClick={swapColors}
-                        className="w-14 h-14 bg-gray-900 text-white rounded-2xl flex items-center justify-center hover:scale-110 transition-transform shadow-xl active:scale-90"
+                        className="w-10 h-10 bg-gray-900 text-white rounded-lg flex items-center justify-center hover:scale-110 transition-transform shadow-lg active:scale-90"
                     >
-                        <ArrowRightLeft size={24} className="rotate-90" />
+                        <ArrowRightLeft size={18} className="rotate-90" />
                     </button>
                 </div>
 
-                <div className="flex flex-col gap-4">
-                    <label className="text-sm font-black text-gray-400 uppercase tracking-widest ml-1">Text Color</label>
-                    <div className="flex items-center gap-4">
-                        <input
-                            type="color"
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            className="w-20 h-20 rounded-2xl cursor-pointer border-none p-0 bg-transparent overflow-hidden"
-                        />
-                        <input
-                            type="text"
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            className="flex-1 h-16 px-6 text-xl font-black rounded-2xl border-2 border-gray-50 bg-gray-50 focus:bg-white focus:border-blue-500 transition-all outline-none"
-                        />
-                    </div>
+                <div className="flex flex-col gap-3">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Text Color</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setIsTextModalOpen(true)}
+                      className="w-12 h-12 rounded-lg cursor-pointer border-2 border-gray-200 shadow hover:scale-105 transition-transform relative overflow-hidden"
+                      style={{ backgroundColor: text }}
+                    />
+                    <input
+                      type="text"
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      className="flex-1 h-12 px-4 text-base font-black rounded-lg border-2 border-gray-50 bg-gray-50 focus:bg-white focus:border-blue-500 transition-all outline-none"
+                      placeholder="#000000"
+                    />
+                  </div>
                 </div>
 
                 <button
                     onClick={getAccessiblePair}
-                    className="h-16 flex items-center justify-center gap-3 text-lg font-black bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all"
+                    className="h-12 flex items-center justify-center gap-2 text-base font-black bg-blue-600 text-white rounded-lg shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all"
                 >
-                    <RefreshCw size={24} />
+                    <RefreshCw size={18} />
                     Generate Accessible Pair
                 </button>
 
@@ -323,6 +329,26 @@ const getContrastSuggestions = (baseColor, isBackground = true) => {
           </section>
         </div>
       </main>
+      
+      <ColorPickerModal
+        isOpen={isBackgroundModalOpen}
+        onClose={() => setIsBackgroundModalOpen(false)}
+        value={background}
+        onChange={setBackground}
+        label="Background Color"
+        copyToClipboard={copyToClipboard}
+      />
+      
+      <ColorPickerModal
+        isOpen={isTextModalOpen}
+        onClose={() => setIsTextModalOpen(false)}
+        value={text}
+        onChange={setText}
+        label="Text Color"
+        copyToClipboard={copyToClipboard}
+      />
+      
+      <Toast show={showNotification} message={notificationMessage} />
     </div>
   );
 }
